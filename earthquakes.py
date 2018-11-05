@@ -1,51 +1,46 @@
 #!/usr/bin/env python3
 
 '''
++---------------------------------------------------------------------
 + Do some interesting stuff with USGS earthquate data
++
++ See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
++
++ for info on request options and data formats
++---------------------------------------------------------------------
 '''
+
+_author__      = "Michael E. O'Connor"
+__copyright__   = "Copyright 2018"
 
 import sys
 import math
 import json
+from urllib.request import urlopen
 from haversine import calc_dist as dist
 
 if sys.version_info <= (3, 0):
     print("Sorry, {} requires Python 3.x, not Python 2.x".format(sys.argv[0]))
     raise SystemExit()
 
-try:
-    from urllib.request import urlopen
-except ImportError as e:
-    print ("Unable to import urlib.request: {}".format(e))
-    raise SystemExit()
+# Lat and long for my Zipcode per https://www.latlong.net
+# Used to calculate relative distance from events to my location
 
-# Lat and long for Zipcode 75056 per https://www.latlong.net
-# Used to calculate relative distance from event to my location
-
-my_lat = 33.096470
+my_lat  =  33.096470
 my_long = -96.887009
-
-def get_dist(quake):
-    return quake.get(['features']['distance'], math.inf)
 
 def printResults(data):
 
-  '''
-  JSON Format data description @:
-  https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
-  '''
-  # Use the json module to load the string data into a dictionary
-  quakes_json = json.loads(data)
+  # Load the string data into a local dictionary
 
-  kl = list(quakes_json.keys())
-  # print (kl)
+  quakes_json = json.loads(data)
 
   if "title" in quakes_json["metadata"]:
       count = quakes_json["metadata"]["count"];
-      print ("Recorded {} events in {}".format(count, quakes_json["metadata"]["title"]))
+      print ("Recorded {} events from {}".format(count, quakes_json["metadata"]["title"]))
 
-  # for each event, calculate distance from my coordinates and add to dictionary
-  # and append id key and distance value pair to new dictionary for sorting
+  # for each event, calculate distance from my coordinates and add value
+  # to a new dictionary { id : distance } we will use to sort raw event data.
 
   events = {}
 
@@ -53,31 +48,31 @@ def printResults(data):
     coords = i["geometry"]["coordinates"]
     long = coords[0]
     lat = coords[1]
-    i['distance'] = dist(lat, long, my_lat, my_long)
-    events.update({i['id']:i['distance']})
+    distance = dist(lat, long, my_lat, my_long)
+    events.update({i['id']:distance})
 
-  # Sort { id : distance } key pair dictionary by distance
+  # Sort { id : distance } key pair dictionary by distance value kv[1]
 
   sorted_events = sorted(events.items(), key=lambda kv: kv[1])
 
-  # print ("sorted=", sorted_events)
+  # Loop through distance sorted event ids (outer loop) and original quake data
+  # (inner loop) comparing id values as we go. When we have a match, output the
+  # event location and distance. Limit output to max_events value
 
-  # Now loop through distance sorted events and original quake data comparing
-  # ids as we go. When we have a match, output the event location and distance
+  max_events = 5000
 
-  print("\n    Sorted events by distance from: {} : {}".format(my_lat, my_long), flush=True)
-  print("-"*64)
+  print("\n      Sorted events nearest to coordinates: {} : {}".format(
+        my_lat, my_long))
+  print("-"*78, flush=True)
+
   for i in sorted_events:
-      #print ("i=", i[0])
       for k in quakes_json["features"]:
-          #print ("k=", k)
-          if k["id"] == i[0] and k["distance"] <= 5000:
-              print ("{:4.2f} {:40.38} distance: {:6.2f} miles".format(
+          if k["id"] == i[0] and i[1] <= max_events:
+              print ("{:4.2f} centered {:40.38} distance: {:6.2f} miles".format(
                             k["properties"]["mag"],
                             k["properties"]["place"],
-                            k["distance"])
+                            i[1])
                             )
-
 
 def main():
 

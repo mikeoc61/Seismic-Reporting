@@ -2,7 +2,7 @@
 
 '''
 +---------------------------------------------------------------------
-+ Do some interesting stuff with USGS earthquate data
++ Query, sort, format and output USGS earthquate data
 +
 + See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
 +
@@ -10,8 +10,8 @@
 +---------------------------------------------------------------------
 '''
 
-_author__      = "Michael E. O'Connor"
-__copyright__   = "Copyright 2018"
+_author__     = "Michael E. O'Connor"
+__copyright__ = "Copyright 2018"
 
 import sys
 import math
@@ -43,13 +43,17 @@ def printResults(data):
   # to a new dictionary { id : distance } we will use to sort raw event data.
 
   events = {}
+  max_mag = 0
 
   for i in quakes_json["features"]:
-    coords = i["geometry"]["coordinates"]
-    long = coords[0]
-    lat = coords[1]
-    distance = dist(lat, long, my_lat, my_long)
-    events.update({i['id']:distance})
+      mag = i["properties"]["mag"]
+      if mag >= max_mag: max_mag = mag
+      coords = i["geometry"]["coordinates"]
+      long, lat = coords[0], coords[1]
+      distance = dist(lat, long, my_lat, my_long)
+      events.update({i['id']:distance})
+
+  print ("Largest recorded was magnitude [{:2.1f}]".format(max_mag))
 
   # Sort { id : distance } key pair dictionary by distance value kv[1]
 
@@ -61,9 +65,9 @@ def printResults(data):
 
   max_events = 5000
 
-  print("\n      Sorted events nearest to coordinates: {} : {}".format(
+  print ("\n      Sorted events nearest to coordinates: {} : {}".format(
         my_lat, my_long))
-  print("-"*78, flush=True)
+  print ("-"*78, flush=True)
 
   for i in sorted_events:
       for k in quakes_json["features"]:
@@ -85,13 +89,12 @@ def main():
   try:
       webUrl = urlopen(quakeData)
   except:
-	  print ("Error opening: {}".format(quakeData))
+      print ("Error opening: {}".format(quakeData))
 
   if (webUrl.getcode() == 200):
-    data = webUrl.read()
-    printResults(data)
+      data = webUrl.read()
+      printResults(data)
   else:
-    print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
+      print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
 
-if __name__ == "__main__":
-  main()
+if __name__ == "__main__": main()

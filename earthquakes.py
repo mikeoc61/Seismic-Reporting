@@ -21,7 +21,8 @@ from urllib.request import urlopen
 from haversine import calc_dist as dist
 
 if sys.version_info <= (3, 0):
-    print("Sorry, {} requires Python 3.x, not Python 2.x".format(sys.argv[0]))
+    print("Sorry, {} requires Python 3.x, detected: {}".format \
+          (sys.argv[0], str(sys.version_info[0]) + '.' + str(sys.version_info[1])))
     raise SystemExit()
 
 # Lat and long for my Zipcode per https://www.latlong.net

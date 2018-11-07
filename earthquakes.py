@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 '''
 +---------------------------------------------------------------------
@@ -14,8 +15,8 @@ _author__     = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
 import sys
-import math
 import json
+import pprint
 from urllib.request import urlopen
 from haversine import calc_dist as dist
 
@@ -33,7 +34,10 @@ def printResults(data):
 
   # Load the string data into a local dictionary
 
-  quakes_json = json.loads(data)
+  #quakes_json = json.loads(data)
+  quakes_json = json.loads(data.decode('utf-8'))
+
+  # pprint.pprint(quakes_json)
 
   if "title" in quakes_json["metadata"]:
       count = quakes_json["metadata"]["count"];
@@ -42,22 +46,26 @@ def printResults(data):
   # for each event, calculate distance from my coordinates and add value
   # to a new dictionary { id : distance } we will use to sort raw event data.
 
-  events = {}
+  mapList = {}
   max_mag = 0
 
   for i in quakes_json["features"]:
+      #if max_mag == 0: pprint.pprint(i)
       mag = i["properties"]["mag"]
-      if mag >= max_mag: max_mag = mag
-      coords = i["geometry"]["coordinates"]
-      long, lat = coords[0], coords[1]
+      if mag >= max_mag:
+          max_mag = mag
+          max_place = i["properties"]["place"]
+      long = i["geometry"]["coordinates"][0]
+      lat  = i["geometry"]["coordinates"][1]
       distance = dist(lat, long, my_lat, my_long)
-      events.update({i['id']:distance})
+      mapList.update({i['id']:distance})
 
-  print ("Largest recorded was magnitude [{:2.1f}]".format(max_mag))
+  biggest = "{:2.1f} at {}".format(max_mag, max_place)
+  print ("Largest recorded event was magnitude {}".format(biggest))
 
   # Sort { id : distance } key pair dictionary by distance value kv[1]
 
-  sorted_events = sorted(events.items(), key=lambda kv: kv[1])
+  sorted_map = sorted(mapList.items(), key=lambda kv: kv[1])
 
   # Loop through distance sorted event ids (outer loop) and original quake data
   # (inner loop) comparing id values as we go. When we have a match, output the
@@ -65,11 +73,15 @@ def printResults(data):
 
   max_events = 5000
 
+  # Print nicely formatted header
+
   print ("\n      Sorted events nearest to coordinates: {} : {}".format(
         my_lat, my_long))
   print ("-"*78, flush=True)
 
-  for i in sorted_events:
+  # print events, one per line
+
+  for i in sorted_map:
       for k in quakes_json["features"]:
           if k["id"] == i[0] and i[1] <= max_events:
               print ("{:4.2f} centered {:40.38} distance: {:6.2f} miles".format(

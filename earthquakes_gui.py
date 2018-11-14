@@ -37,22 +37,32 @@ class USGS_Gui:
 
         master.title('USGS Earthquake Data')
         frame0 = ttk.Panedwindow(master, orient = HORIZONTAL)
-        frame0.pack(fill = BOTH, expand = True)
+        frame0.pack(fill = BOTH, expand = False)
         frame1 = ttk.Frame(frame0, width = 100, height = 300, relief = SUNKEN)
         frame2 = ttk.Frame(frame0, width = 500, height = 300, relief = SUNKEN)
         frame0.add(frame1, weight = 1)
         frame0.add(frame2, weight = 4)
         Label(frame1, text = "Select sample period", justify = LEFT).pack()
+
+        # Radio Buttons used to select time period
+
         self.period = StringVar()
         day = ttk.Radiobutton(frame1, text = "Day", variable = self.period, value = "day")
         week = ttk.Radiobutton(frame1, text = "Week", variable = self.period, value = "week")
         month = ttk.Radiobutton(frame1, text = "Month", variable = self.period, value = "month")
+        self.period.set("day")
         day.pack(anchor = 'w')
         week.pack(anchor = 'w')
         month.pack(anchor = 'w')
+
+        # Button pressed to generate Results
+
         result_button = ttk.Button(frame1)
         result_button.config(text = "Get Results", command = self.submit)
         result_button.pack(anchor = 's')
+
+        # Text Box used to store and scroll output if applicable
+
         result_box = Text(frame2)
         result_box.grid(row = 0, column = 0)
         scrollbar = ttk.Scrollbar(frame2, orient = VERTICAL, command = result_box.yview)

@@ -16,11 +16,10 @@
 _author__     = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
+import sys
 from tkinter import *
 from tkinter import ttk
 from output import printResults
-
-import sys
 
 if sys.version_info <= (3, 0):
     print("Sorry, {} requires Python 3.x, detected version: {}".format \
@@ -92,12 +91,6 @@ class USGS_Gui:
 
 def redirector(inputStr):
     result_box.insert(INSERT, inputStr)
-
-# Lat and long for my Zipcode per https://www.latlong.net
-# Used to calculate relative distance from events to my location
-
-my_lat  =  33.096470
-my_long = -96.887009
 
 def main():
 

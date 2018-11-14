@@ -48,7 +48,7 @@ def printResults(data):
   # (inner loop) comparing id values as we go. When we have a match, output the
   # event location and distance. Limit output to max_events value
 
-  max_events = 5000
+  max_miles = 6000
 
   # Print nicely formatted header
 
@@ -59,7 +59,7 @@ def printResults(data):
 
   for i in sorted_map:
       for k in quakes_json["features"]:
-          if k["id"] == i[0] and i[1] <= max_events:
+          if k["id"] == i[0] and i[1] <= max_miles:
               print ("{:4.2f} centered {:40.38} distance: {:6.2f} miles".format(
                             k["properties"]["mag"],
                             k["properties"]["place"],

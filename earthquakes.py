@@ -17,11 +17,10 @@ __copyright__ = "Copyright 2018"
 import sys
 import json
 import pprint
-#from urllib.request import urlopen
 from haversine import calc_dist as dist
 
 if sys.version_info <= (3, 0):
-    print("Sorry, {} requires Python 3.x, detected: {}".format \
+    print("Sorry, {} requires Python 3.x, detected version: {}".format \
           (sys.argv[0], str(sys.version_info[0]) + '.' + str(sys.version_info[1])))
     raise SystemExit()
 else:

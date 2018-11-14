@@ -3,7 +3,7 @@
 Python3 program which queries earthquake historical data and outputs results
 sorted by distance from a given coordinate defined in output.py.
 
-Uses the Haversine formula to calculate distance relative starting coordinate.
+Uses the Haversine formula to calculate distance relative to starting coordinates
 
 earthquakes.py is the command line version
 

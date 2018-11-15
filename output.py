@@ -38,7 +38,7 @@ def printResults(data):
       mapList.update({i['id']:distance})
 
   biggest = "{:2.1f} at {}".format(max_mag, max_place)
-  print ("Largest recorded event was magnitude {}".format(biggest))
+  print ("Strongest event was magnitude {}".format(biggest))
 
   # Sort { id : distance } key pair dictionary by distance value kv[1]
 

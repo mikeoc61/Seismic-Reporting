@@ -1,27 +1,47 @@
 import json
+from urllib import request
 from haversine import calc_dist as dist
 
 # Lat and long for my Zipcode per https://www.latlong.net
 # Used to calculate relative distance from events to my location
 
-my_lat  =  33.096470
-my_long = -96.887009
+#my_lat  =  33.096470
+#my_long = -96.887009
 
 def printResults(data):
 
-  # Load the string data into a local dictionary
+  # Initialize data structure based on format expected from call to web service
+  # URL = http://ipinfo.io/json
 
-  #quakes_json = json.loads(data)
+  geo_data = {
+    "ip": "123.123.123.123",
+    "hostname": "myhost.net",
+    "city": "Dallas",
+    "region": "Texas",
+    "country": "US",
+    "loc": "32.7787,-96.8217",
+    "postal": "75270",
+    "org": "SoftLayer Technologies Inc."
+    }
+
+  try:
+      geo_data = json.load(request.urlopen('http://ipinfo.io/json'))
+  except Exception as e:
+      print('Error determining geolocation data: {}'.format(e))
+      print("Using default settings")
+
+  my_lat, my_long = geo_data['loc'].split(',')
+
+  # Load the earthquake string data into a local dictionary
+
   quakes_json = json.loads(data.decode('utf-8'))
-
-  # pprint.pprint(quakes_json)
 
   if "title" in quakes_json["metadata"]:
       count = quakes_json["metadata"]["count"];
       print ("Recorded {} events from {}".format(count, quakes_json["metadata"]["title"]))
 
   # for each event, calculate distance from my coordinates and add value
-  # to a new dictionary { id : distance } we will use to sort raw event data.
+  # to a new dictionary { id : distance } used to sort raw event data.
 
   mapList = {}
   max_mag = 0
@@ -34,7 +54,7 @@ def printResults(data):
           max_place = i["properties"]["place"]
       long = i["geometry"]["coordinates"][0]
       lat  = i["geometry"]["coordinates"][1]
-      distance = dist(lat, long, my_lat, my_long)
+      distance = dist(lat, long, float(my_lat), float(my_long))
       mapList.update({i['id']:distance})
 
   biggest = "{:2.1f} at {}".format(max_mag, max_place)
@@ -52,10 +72,12 @@ def printResults(data):
 
   # Print nicely formatted header
 
-  print ("\n      Sorted events nearest to coordinates: {} : {} \n{}" \
-        .format(my_lat, my_long, '-'*78))
+  print ("\nSorted events nearest to: {loc} [{city}, {region}, {country}]" \
+        .format(**geo_data))
 
-  # print events, one per line
+  print ("\n{}".format('-'*78))
+
+  # output sorted seismic events, one per line
 
   for i in sorted_map:
       for k in quakes_json["features"]:

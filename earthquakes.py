@@ -11,7 +11,7 @@
 +---------------------------------------------------------------------
 '''
 
-_author__     = "Michael E. O'Connor"
+__author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
 import sys

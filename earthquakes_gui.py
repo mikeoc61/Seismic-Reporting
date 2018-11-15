@@ -5,7 +5,7 @@
 +---------------------------------------------------------------------
 + Query, sort, format and output USGS earthquate data
 +
-+ Uses Tkinter to provide GUI
++ Uses Tkinter (tcl/tk) to provide GUI
 +
 + See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
 +
@@ -35,21 +35,24 @@ class USGS_Gui:
     def __init__(self, master):
         global result_box
 
-        master.title('USGS Earthquake Data')
+        style = ttk.Style(master)
+        style.theme_use('aqua')
+
+        master.title('USGS Earthquake Data, Magnitude >= 2.5')
         frame0 = ttk.Panedwindow(master, orient = HORIZONTAL)
         frame0.pack(fill = BOTH, expand = False)
         frame1 = ttk.Frame(frame0, width = 100, height = 300, relief = SUNKEN)
         frame2 = ttk.Frame(frame0, width = 500, height = 300, relief = SUNKEN)
         frame0.add(frame1, weight = 1)
         frame0.add(frame2, weight = 4)
-        Label(frame1, text = "Select sample period", justify = LEFT).pack()
+        ttk.Label(frame1, text = "Select sample period", justify = LEFT).pack(padx=(5,5))
 
         # Radio Buttons used to select time period
 
         self.period = StringVar()
-        day = ttk.Radiobutton(frame1, text = "Day", variable = self.period, value = "day")
-        week = ttk.Radiobutton(frame1, text = "Week", variable = self.period, value = "week")
-        month = ttk.Radiobutton(frame1, text = "Month", variable = self.period, value = "month")
+        day = ttk.Radiobutton(frame1, text = "Past 24 hrs", variable = self.period, value = "day")
+        week = ttk.Radiobutton(frame1, text = "Past Week", variable = self.period, value = "week")
+        month = ttk.Radiobutton(frame1, text = "Past Month", variable = self.period, value = "month")
         self.period.set("day")
         day.pack(anchor = 'w')
         week.pack(anchor = 'w')
@@ -59,7 +62,7 @@ class USGS_Gui:
 
         result_button = ttk.Button(frame1)
         result_button.config(text = "Get Results", command = self.submit)
-        result_button.pack(anchor = 's')
+        result_button.pack(anchor = 's', pady=(10, 10))
 
         # Text Box used to store and scroll output if applicable
 

@@ -36,7 +36,11 @@ class USGS_Gui:
         global result_box
 
         style = ttk.Style(master)
-        style.theme_use('aqua')
+
+        try:
+            style.theme_use('aqua')
+        except:
+            style.theme_use('default')
 
         master.title('USGS Earthquake Data, Magnitude >= 2.5')
         frame0 = ttk.Panedwindow(master, orient = HORIZONTAL)

@@ -1,12 +1,15 @@
 # Seismic-Reporting
 
-Python3 program which queries earthquake historical data and outputs results
-sorted by distance from a given coordinate defined in output.py.
+Python3 program which queries USGS earthquake historical data and outputs results
+sorted by distance from a given coordinate.
 
-Uses the Haversine formula to calculate distance relative to starting coordinates
+IP_geo.py contains code to dynamically fetch current location data based on IP lookup
 
 earthquakes.py is the command line version
 
-earthquakes_gui is the GUI version built with Tkinter
+earthquakes_gui.py is the GUI version built with Tkinter
 
-Both versions import the output.py which also imports haversine.py
+Both command line and GUI versions import the output.py which does the actual output
+formatting, imports haversine.py and imports IP_geo.py to determine local coordinates
+
+The Haversine formula is used to calculate distance relative to starting coordinates

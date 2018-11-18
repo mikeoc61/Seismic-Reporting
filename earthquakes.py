@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+from output import printResults
+
 '''
 +---------------------------------------------------------------------
 + Query, sort, format and output USGS earthquate data
@@ -14,13 +17,9 @@
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
-import sys
-from output import printResults
 
 if sys.version_info <= (3, 0):
-    print("Sorry, {} requires Python 3.x, detected version: {}".format \
-          (sys.argv[0], str(sys.version_info[0]) + '.' + str(sys.version_info[1])))
-    raise SystemExit()
+    from urllib2 import urlopen
 else:
     from urllib.request import urlopen
 

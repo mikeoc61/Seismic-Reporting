@@ -1,6 +1,13 @@
+from __future__ import print_function
 import json
+import sys
+
 #import pprint
-from urllib.request import urlopen
+
+if sys.version_info <= (3, 0):
+    from urllib2 import urlopen
+else:
+    from urllib.request import urlopen
 
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"

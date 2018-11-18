@@ -1,4 +1,6 @@
+from __future__ import print_function
 import json
+
 from IP_geo import get_IP_geo
 from haversine import calc_dist as dist
 

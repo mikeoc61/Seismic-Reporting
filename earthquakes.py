@@ -15,7 +15,6 @@ __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
 import sys
-import pprint
 from output import printResults
 
 if sys.version_info <= (3, 0):
@@ -32,16 +31,16 @@ def main():
   # quakeData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson"
   quakeData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson"
 
-  # Open the URL and read the data
+  # Open the URL and read the data, call printResults() to format and output
+
   try:
       webUrl = urlopen(quakeData)
+      if (webUrl.getcode() == 200):
+          data = webUrl.read()
+          printResults(data)
+      else:
+          print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
   except:
       print ("Error opening: {}".format(quakeData))
-
-  if (webUrl.getcode() == 200):
-      data = webUrl.read()
-      printResults(data)
-  else:
-      print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
 
 if __name__ == "__main__": main()

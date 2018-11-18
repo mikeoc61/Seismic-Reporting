@@ -40,7 +40,7 @@ class USGS_Gui:
         try:
             style.theme_use('aqua')
         except:
-            style.theme_use('default')
+            style.theme_use('clam')
 
         master.title('USGS Earthquake Data, Magnitude >= 2.5')
         frame0 = ttk.Panedwindow(master, orient = HORIZONTAL)

@@ -25,29 +25,29 @@ def printResults(data):
   my_lat  = float (my_geo['loc'][0])
   my_long = float (my_geo['loc'][1])
 
-  # for each event, calculate distance from my coordinates and add value
-  # to a new dictionary { id : distance } used to sort raw event data.
+  # For each event, calculate distance from my coordinates and add event id
+  # and distance from me as a tuple to mapList[] which will then be used to
+  # sort raw event data by distance 
 
-  mapList = {}
+  mapList = []
   max_mag = 0
 
   for i in quakes_json["features"]:
       #if max_mag == 0: pprint.pprint(i)
       mag = i["properties"]["mag"]
       if mag >= max_mag:
-          max_mag = mag
-          max_place = i["properties"]["place"]
+          max_mag, max_place = mag, i["properties"]["place"]
       long = i["geometry"]["coordinates"][0]
       lat  = i["geometry"]["coordinates"][1]
       distance = dist(lat, long, my_lat, my_long)
-      mapList.update({i['id']:distance})
+      mapList.append((i['id'],distance))
 
   biggest = "{:2.1f} at {}".format(max_mag, max_place)
   print ("Strongest event was magnitude {}".format(biggest))
 
-  # Sort { id : distance } key pair dictionary by distance value kv[1]
+  # Sort () id : distance ) key pair dictionary by distance value tup(1)
 
-  sorted_map = sorted(mapList.items(), key=lambda kv: kv[1])
+  sorted_map = sorted(mapList, key=lambda tup: tup[1])
 
   # Loop through distance sorted event ids (outer loop) and original quake data
   # (inner loop) comparing id values as we go. When we have a match, output the

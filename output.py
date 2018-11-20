@@ -27,7 +27,7 @@ def printResults(data):
 
   # For each event, calculate distance from my coordinates and add event id
   # and distance from me as a tuple to mapList[] which will then be used to
-  # sort raw event data by distance 
+  # sort raw event data by distance
 
   mapList = []
   max_mag = 0
@@ -57,7 +57,7 @@ def printResults(data):
 
   # Print nicely formatted header
 
-  print ("\nSorted events nearest to: {loc} [{city}, {region}, {country}]" \
+  print ("\nSorted events nearest to: {loc[0]}N {loc[1]}E [{city}, {region}, {country}]" \
         .format(**my_geo))
 
   print ("\n{}".format('-'*78))

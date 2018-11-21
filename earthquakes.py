@@ -34,12 +34,13 @@ def main():
 
   try:
       webUrl = urlopen(quakeData)
+  except:
+      print ("Error opening: {}".format(quakeData))
+  else:
       if (webUrl.getcode() == 200):
           data = webUrl.read()
           printResults(data)
       else:
           print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
-  except:
-      print ("Error opening: {}".format(quakeData))
 
 if __name__ == "__main__": main()

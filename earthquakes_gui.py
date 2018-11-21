@@ -87,16 +87,18 @@ class USGS_Gui:
         # Open the URL and read the data
         try:
             webUrl = urlopen (quakeData)
+        except:
+            print ("Fatal error opening: {}".format(quakeData))
+            raise SystemExit()
+        else:
             if (webUrl.getcode() == 200):
                 data = webUrl.read()
                 sys.stdout.write = redirector
                 print ("From: {}".format(quakeData))
                 printResults(data)
             else:
+                sys.stdout.write = sys.__stdout__
                 print ("Can't retrieve quake data " + str(webUrl.getcode()))
-        except:
-            print ("Fatal error opening: {}".format(quakeData))
-            raise SystemExit()
 
     def clear(self):
 

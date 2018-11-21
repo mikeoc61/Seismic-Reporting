@@ -20,6 +20,7 @@ import sys
 from tkinter import *
 from tkinter import ttk
 from output import printResults
+from timeit import default_timer as timer
 
 if sys.version_info <= (3, 0):
     print("Sorry, {} requires Python 3.x, detected version: {}".format \
@@ -27,6 +28,10 @@ if sys.version_info <= (3, 0):
     raise SystemExit()
 else:
     from urllib.request import urlopen
+
+# URL Base for earthquake data feed. Will be appended to in USGS_Gui class
+
+quake_URL_base = "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
 
 # Construct GUI
 
@@ -80,11 +85,10 @@ class USGS_Gui:
 
         self.clear()
 
-        quake_URL_base = "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
-
         quakeData = quake_URL_base + "2.5_" + self.period.get() + ".geojson"
 
         # Open the URL and read the data
+
         try:
             webUrl = urlopen (quakeData)
         except:
@@ -94,10 +98,11 @@ class USGS_Gui:
             if (webUrl.getcode() == 200):
                 data = webUrl.read()
                 sys.stdout.write = redirector
-                print ("From: {}".format(quakeData))
+                start = timer()
                 printResults(data)
-            else:
+                print ("Processed data in {:2.3f} seconds".format(timer() - start))
                 sys.stdout.write = sys.__stdout__
+            else:
                 print ("Can't retrieve quake data " + str(webUrl.getcode()))
 
     def clear(self):

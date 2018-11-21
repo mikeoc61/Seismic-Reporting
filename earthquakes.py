@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-from output import printResults
-
 '''
 +---------------------------------------------------------------------
 + Query, sort, format and output USGS earthquate data
@@ -14,9 +11,12 @@ from output import printResults
 +---------------------------------------------------------------------
 '''
 
+import sys
+from output import printResults
+from timeit import default_timer as timer
+
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
-
 
 if sys.version_info <= (3, 0):
     from urllib2 import urlopen
@@ -39,7 +39,9 @@ def main():
   else:
       if (webUrl.getcode() == 200):
           data = webUrl.read()
+          start = timer()
           printResults(data)
+          print ("Processed data in {:2.3f} seconds".format(timer() - start))
       else:
           print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
 

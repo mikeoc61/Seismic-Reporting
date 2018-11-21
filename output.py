@@ -9,21 +9,22 @@ __copyright__ = "Copyright 2018"
 
 def printResults(data):
 
-  # Load the earthquake string data into a local dictionary
+  # Decode and load the earthquake byte data into a local dictionary
 
   quakes_json = json.loads(data.decode('utf-8'))
 
-  if "title" in quakes_json["metadata"]:
-      count = quakes_json["metadata"]["count"]
-      print ("Recorded {} events from {}".format(count, quakes_json["metadata"]["title"]))
+  meta_d = quakes_json["metadata"]
+
+  if "title" in meta_d:
+      print("Recorded {} events from {}".format(meta_d["count"], meta_d["title"]))
 
   # Call get_IP_geo() to dynamically determine location based on IP addr lookup
   # Convert strings to float here to save processing time in event sort loop
 
   my_geo = get_IP_geo()
 
-  my_lat  = float (my_geo['loc'][0])
-  my_long = float (my_geo['loc'][1])
+  my_lat  = float(my_geo['loc'][0])
+  my_long = float(my_geo['loc'][1])
 
   # For each event, calculate distance from my coordinates and add event id
   # and distance from me as a tuple to mapList[] which will then be used to
@@ -42,8 +43,7 @@ def printResults(data):
       distance = dist(lat, long, my_lat, my_long)
       mapList.append((i['id'],distance))
 
-  biggest = "{:2.1f} at {}".format(max_mag, max_place)
-  print ("Strongest event was magnitude {}".format(biggest))
+  print("Strongest was magnitude {:2.1f} at {}".format(max_mag, max_place))
 
   # Sort mapList list of (id, distance) tuples by distance
 
@@ -57,10 +57,10 @@ def printResults(data):
 
   # Print nicely formatted header
 
-  print ("\nSorted events nearest to: {loc[0]}N {loc[1]}E [{city}, {region}, {country}]" \
+  print("\nSorted events nearest to: {loc[0]}N {loc[1]}E [{city}, {region}, {country}]" \
         .format(**my_geo))
 
-  print ("\n{}".format('-'*78))
+  print("\n{}".format('-'*78))
 
   # output sorted seismic events, one per line
 

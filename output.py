@@ -14,7 +14,7 @@ def printResults(data):
   quakes_json = json.loads(data.decode('utf-8'))
 
   if "title" in quakes_json["metadata"]:
-      count = quakes_json["metadata"]["count"];
+      count = quakes_json["metadata"]["count"]
       print ("Recorded {} events from {}".format(count, quakes_json["metadata"]["title"]))
 
   # Call get_IP_geo() to dynamically determine location based on IP addr lookup

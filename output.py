@@ -45,7 +45,7 @@ def printResults(data):
   biggest = "{:2.1f} at {}".format(max_mag, max_place)
   print ("Strongest event was magnitude {}".format(biggest))
 
-  # Sort () id : distance ) key pair dictionary by distance value tup(1)
+  # Sort mapList list of (id, distance) tuples by distance
 
   sorted_map = sorted(mapList, key=lambda tup: tup[1])
 

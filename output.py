@@ -3,72 +3,63 @@ import json
 
 from IP_geo import get_IP_geo
 from haversine import calc_dist as dist
+from statistics import mean, mode, median
 
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
-def printResults(data):
+# Return largest, most commonly occuring numerical value when no single mode
+# value exists. Statistics.mode() throws an exception when there is no single
+# unique mode value
 
-  # Decode and load the earthquake byte data into a local dictionary
+def unique_mode(a_list):
+    numeral=[[a_list.count(n), n] for n in a_list]
+    numeral.sort(key=lambda x:x[0], reverse=True)
+    #print(numeral)
+    return(numeral[0][1])
 
-  quakes_json = json.loads(data.decode('utf-8'))
+def printResults (data):
 
-  meta_d = quakes_json["metadata"]
+    results = {}        # Stores event data of interest
+    magData = []        # Stores all event magnitudes
 
-  if "title" in meta_d:
-      print("Recorded {} events from {}".format(meta_d["count"], meta_d["title"]))
+    # Use get_IP_geo() to dynamically determine my location using IP addr lookup
 
-  # Call get_IP_geo() to dynamically determine location based on IP addr lookup
-  # Convert strings to float here to save processing time in event sort loop
+    my_geo = get_IP_geo()
+    my_lat = float(my_geo['loc'][0])
+    my_long = float(my_geo['loc'][1])
 
-  my_geo = get_IP_geo()
+    # Load the raw quake string data into a new local dictionary
 
-  my_lat  = float(my_geo['loc'][0])
-  my_long = float(my_geo['loc'][1])
+    quakes_json = json.loads(data.decode('utf-8'))
 
-  # For each event, calculate distance from my coordinates and add event id
-  # and distance from me as a tuple to mapList[] which will then be used to
-  # sort raw event data by distance
+    if "title" in quakes_json["metadata"]:
+        count = quakes_json["metadata"]["count"];
+        print ("Recorded total of {} events from {}".format(count, quakes_json["metadata"]["title"]))
 
-  mapList = []
-  max_mag = 0
+    # For each event, calculate distance from my coordinates.  Build a new dictionary
+    # data structure containing event data of interest:
+    # results = {id : (magnitude, location, distance)}
 
-  for i in quakes_json["features"]:
-      #if max_mag == 0: pprint.pprint(i)
-      mag = i["properties"]["mag"]
-      if mag >= max_mag:
-          max_mag, max_place = mag, i["properties"]["place"]
-      long = i["geometry"]["coordinates"][0]
-      lat  = i["geometry"]["coordinates"][1]
-      distance = dist(lat, long, my_lat, my_long)
-      mapList.append((i['id'],distance))
+    for e in quakes_json["features"]:
+        long = e["geometry"]["coordinates"][0]
+        lat  = e["geometry"]["coordinates"][1]
+        distance = dist(lat, long, my_lat, my_long)
+        results.update({e['id']:[e['properties']['mag'], e['properties']['place'], distance]})
+        magData.append(e['properties']['mag'])
 
-  print("Strongest was magnitude {:2.1f} at {}".format(max_mag, max_place))
+    # Output Statistical Analysis of Magnitude data
 
-  # Sort mapList list of (id, distance) tuples by distance
+    print('\n{:*^78}\n'.format(' [Event statistical Analysis] '))
 
-  sorted_map = sorted(mapList, key=lambda tup: tup[1])
+    print("Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}" \
+        .format(max(magData), mean(magData), median(magData), unique_mode(magData)))
 
-  # Loop through distance sorted event ids (outer loop) and original quake data
-  # (inner loop) comparing id values as we go. When we have a match, output the
-  # event location and distance. Limit output to max_events value
+    # Output Select Event data sorted by distance from IP based geo coordinates
 
-  max_miles = 6000
+    header = ' [Individual events sorted nearest to: {} : {}] '.format(my_lat, my_long)
+    print('\n{:*^78}\n'.format(header))
 
-  # Print nicely formatted header
-
-  print("\nSorted events nearest to: {loc[0]}N {loc[1]}E [{city}, {region}, {country}]" \
-        .format(**my_geo))
-
-  print("\n{}".format('-'*78))
-
-  # output sorted seismic events, one per line
-
-  for i in sorted_map:
-      for k in quakes_json["features"]:
-          if k["id"] == i[0] and i[1] <= max_miles:
-              print ("{:4.2f} centered {:40.38} distance: {:6.2f} miles".format(
-                            k["properties"]["mag"],
-                            k["properties"]["place"],
-                            i[1])
-                            )
+    for k in sorted(results.items(), key=lambda kv: kv[1][2]):
+        print("{:4.2f} centered {:40.39} distance: {:6.2f} miles".format(
+           (k[1][0]), k[1][1], (k[1][2])))

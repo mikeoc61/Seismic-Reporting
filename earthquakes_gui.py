@@ -61,8 +61,10 @@ class USGS_Gui:
         Label(frame1, text = "Sort By", bg="black", fg="white", justify = LEFT).pack(fill=X)
         self.sortby = IntVar()
         _mag = ttk.Radiobutton(frame1, text = "Magnitude", variable = self.sortby, value = 0)
+        _loc = ttk.Radiobutton(frame1, text = "Location", variable = self.sortby, value = 1)
         _dist = ttk.Radiobutton(frame1, text = "Distance", variable = self.sortby, value = 2)
         _mag.pack(anchor = 'w')
+        _loc.pack(anchor = 'w')
         _dist.pack(anchor = 'w')
         self.sortby.set(0)
 

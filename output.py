@@ -18,6 +18,29 @@ def unique_mode(a_list):
     #print(numeral)
     return(numeral[0][1])
 
+def format_place(place):
+
+    _regions = ["Region", "Ocean", "Ridge", "Sea", "Passage", "Rise", "Gulf"]
+
+    # If location contains any key word, reassemble into a single string
+    # and return the string unmodified
+
+    _new_list = place.capitalize().split()
+
+    for word in _new_list:
+        if word in _regions:
+            return(' '.join(_new_list))
+
+    # Since no key words were found, split original string into two separated by ','
+    # and then return as a string but with words reversed so that most significant
+    # geography is at the beginning of the string.
+
+    _new_list = place.split(', ')
+    _new_list.reverse()
+    _new_list[0] = _new_list[0].title()
+
+    return (', '.join(_new_list))
+
 def printResults (data, sortby=0):
 
     results = {}                # Store event data of interest
@@ -40,13 +63,19 @@ def printResults (data, sortby=0):
 
     # For each event, calculate distance from my coordinates.
     # Build a new dictionary structure containing just event data of interest:
-    # results = {id : (magnitude, location, distance)}
+    # results = {id : (magnitude, place, distance)}
 
     for e in quakes_json["features"]:
         long = e["geometry"]["coordinates"][0]
         lat  = e["geometry"]["coordinates"][1]
         distance = dist(lat, long, my_lat, my_long)
-        results.update({e['id']:[e['properties']['mag'], e['properties']['place'], distance]})
+
+        if _sort == 1:
+            place = format_place(e['properties']['place'])
+        else:
+            place = e['properties']['place']
+
+        results.update({e['id']:[e['properties']['mag'], place, distance]})
         magData.append(e['properties']['mag'])
 
     # Output Statistical Analysis of Magnitude data
@@ -60,15 +89,17 @@ def printResults (data, sortby=0):
 
     # Output Individual Event data sorted as determined by _sort variable
 
-    if (_sort == 2):
-        header = ' [Individual events sorted nearest to: {} : {}] '.format(my_lat, my_long)
-    elif (_sort == 0):
-        header = ' [Individual events sorted by magnitude] '
+    if (_sort == 0):
+        header = ' [Individual events sorted by MAGNITUDE] '
+    elif (_sort == 1):
+        header = ' [Individual events sorted by LOCATION] '
+    elif (_sort == 2):
+        header = ' [Events sorted by DISTANCE from: {} : {}] '.format(my_lat, my_long)
     else:
-        header = ' [Have no idea how we are sorting - expected 0 or 2]'
+        header = ' [Have no idea how we are sorting] '
 
     print('\n{:*^79}\n'.format(header))
 
-    for id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
+    for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
         print('{:4.2f} centered {:40.39} distance: {:>8.2f} miles'.format(
-           (id[1][0]), id[1][1], (id[1][2])))
+           (event_id[1][0]), event_id[1][1], (event_id[1][2])))

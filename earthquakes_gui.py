@@ -40,41 +40,35 @@ class USGS_Gui:
     def __init__(self, master):
         global result_box
 
-        style = ttk.Style(master)
-
-        try:
-            style.theme_use('aqua')
-        except:
-            style.theme_use('clam')
-
-        master.title('USGS Earthquake Data, Magnitude >= 2.5')
+        master.title('USGS Earthquake Data')
         frame0 = ttk.Panedwindow(master, orient = HORIZONTAL)
-        frame0.pack(fill = BOTH, expand = False)
+        frame0.pack(fill = BOTH, expand = True)
         frame1 = ttk.Frame(frame0, width = 100, height = 300, relief = SUNKEN)
         frame2 = ttk.Frame(frame0, width = 500, height = 300, relief = SUNKEN)
         frame0.add(frame1, weight = 1)
         frame0.add(frame2, weight = 4)
-        ttk.Label(frame1, text = "Select sample period", justify = LEFT).pack(padx=(5,5))
 
-        # Radio Buttons used to select time period
-
+        Label(frame1, text = "Sample period", bg="black", fg="white", justify = LEFT).pack(fill=X)
         self.period = StringVar()
-        day = ttk.Radiobutton(frame1, text = "Past 24 hrs", variable = self.period, value = "day")
-        week = ttk.Radiobutton(frame1, text = "Past Week", variable = self.period, value = "week")
-        month = ttk.Radiobutton(frame1, text = "Past Month", variable = self.period, value = "month")
+        _day = ttk.Radiobutton(frame1, text = "Past Day", variable = self.period, value = "day")
+        _week = ttk.Radiobutton(frame1, text = "Past Week", variable = self.period, value = "week")
+        _month = ttk.Radiobutton(frame1, text = "Past Month", variable = self.period, value = "month")
+        _day.pack(anchor = 'w')
+        _week.pack(anchor = 'w')
+        _month.pack(anchor = 'w')
         self.period.set("day")
-        day.pack(anchor = 'w')
-        week.pack(anchor = 'w')
-        month.pack(anchor = 'w')
 
-        # Button pressed to generate Results
+        Label(frame1, text = "Sort By", bg="black", fg="white", justify = LEFT).pack(fill=X)
+        self.sortby = IntVar()
+        _mag = ttk.Radiobutton(frame1, text = "Magnitude", variable = self.sortby, value = 0)
+        _dist = ttk.Radiobutton(frame1, text = "Distance", variable = self.sortby, value = 2)
+        _mag.pack(anchor = 'w')
+        _dist.pack(anchor = 'w')
+        self.sortby.set(0)
 
         result_button = ttk.Button(frame1)
         result_button.config(text = "Get Results", command = self.submit)
-        result_button.pack(anchor = 's', pady=(10, 10))
-
-        # Text Box used to store and scroll output if applicable
-
+        result_button.pack(anchor = 's')
         result_box = Text(frame2)
         result_box.grid(row = 0, column = 0)
         scrollbar = ttk.Scrollbar(frame2, orient = VERTICAL, command = result_box.yview)
@@ -99,7 +93,7 @@ class USGS_Gui:
                 data = webUrl.read()
                 sys.stdout.write = redirector
                 start = timer()
-                printResults(data)
+                printResults(data, self.sortby)
                 print ("Processed data in {:2.3f} seconds".format(timer() - start))
                 sys.stdout.write = sys.__stdout__
             else:

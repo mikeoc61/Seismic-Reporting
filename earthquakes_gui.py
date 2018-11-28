@@ -71,11 +71,12 @@ class USGS_Gui:
         result_button = ttk.Button(frame1)
         result_button.config(text = "Get Results", command = self.submit)
         result_button.pack(anchor = 's')
-        result_box = Text(frame2)
-        result_box.grid(row = 0, column = 0)
-        scrollbar = ttk.Scrollbar(frame2, orient = VERTICAL, command = result_box.yview)
-        scrollbar.grid(row = 0, column = 1, sticky = 'ns')
-        result_box.config(yscrollcommand = scrollbar.set)
+
+        result_box = Text(frame2, width=85, height=20)
+        scrollbar = Scrollbar(frame2, orient=VERTICAL, command=result_box.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        result_box["yscrollcommand"]=scrollbar.set
+        result_box.pack(side=LEFT, fill=BOTH, expand = YES)
 
     def submit(self):
 

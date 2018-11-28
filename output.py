@@ -80,12 +80,12 @@ def printResults (data, sortby=0):
 
     # Output Statistical Analysis of Magnitude data
 
-    print('\n{:*^79}\n'.format(' [Event statistical Analysis] '))
+    print('\n{:*^85}\n'.format(' [Event statistical Analysis] '))
 
     header = 'Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}' \
         .format(max(magData), mean(magData), median(magData), unique_mode(magData))
 
-    print('{:^79}'.format(header))
+    print('{:^85}'.format(header))
 
     # Output Individual Event data sorted as determined by _sort variable
 
@@ -98,8 +98,8 @@ def printResults (data, sortby=0):
     else:
         header = ' [Have no idea how we are sorting] '
 
-    print('\n{:*^79}\n'.format(header))
+    print('\n{:*^85}\n'.format(header))
 
     for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
-        print('{:4.2f} centered {:40.39} distance: {:>8.2f} miles'.format(
+        print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles'.format(
            (event_id[1][0]), event_id[1][1], (event_id[1][2])))

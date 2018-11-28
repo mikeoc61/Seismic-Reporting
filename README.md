@@ -13,7 +13,7 @@ The GUI version is much more powerful as it allows dynamic control of both the
 sample time interval as well as the sort criteria (Magnitude, Place, Distance)
 
 output.py is imported by earthquakes_gui.py and does the actual output formatting.
-This modules also imports haversine.py and imports IP_geo.py to determine local
+This module also imports haversine.py and imports IP_geo.py to determine local
 coordinates based upon IP address lookup from "http://ipinfo.io/json"
 
 The Haversine formula is used to calculate distance relative to starting coordinates

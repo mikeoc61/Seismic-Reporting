@@ -152,4 +152,5 @@ def main():
         else:
             print ("Error from USGS server, cannot retrieve data " + str(webUrl.getcode()))
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

@@ -8,19 +8,16 @@
 + Uses Tkinter (tcl/tk) to provide GUI
 +
 + See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
-+
-+ for info on request options and data formats
 +---------------------------------------------------------------------
 '''
 
 __author__ = 'Michael E. OConnor'
-__copyright__ = 'Copyright 2018'
+__copyright__ = 'Copyright 2023'
 
 import sys
 from tkinter import *
 from tkinter import ttk
 from output import printResults
-from timeit import default_timer as timer
 
 if sys.version_info <= (3, 0):
     print("Sorry, {} requires Python 3.x, detected version: {}".format \
@@ -33,59 +30,65 @@ else:
 
 quake_URL_base = "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
 
-# Construct GUI
-
+# Initialization function for the GUI using Tcl/Tk
 class USGS_Gui:
 
+    MASTER_WIDTH = 106      # Width of GUI display window in character count
+    MASTER_HEIGHT = 40      # Heigth of GUI display frame in character count
+    WIDTH = 500             # Width of Result frame in pixels
+    HEIGHT = 300            # Heigth of result frame in pixels
+
     def __init__(self, master):
-        global result_box
 
         master.title('USGS Earthquake Data')
         frame0 = ttk.Panedwindow(master, orient=HORIZONTAL)
         frame0.pack(fill=BOTH, expand=True)
-        frame1 = ttk.Frame(frame0, width=100, height=300, relief=SUNKEN)
-        frame2 = ttk.Frame(frame0, width=500, height=300, relief=SUNKEN)
+        # Creating two frames within the window
+        frame1 = ttk.Frame(frame0, width=100, height=self.HEIGHT, relief=SUNKEN)
+        frame2 = ttk.Frame(frame0, width=self.WIDTH, height=self.HEIGHT, relief=SUNKEN)
         frame0.add(frame1, weight=1)
         frame0.add(frame2, weight=4)
 
-        Label(frame1, text="Sample period", bg="black", fg="white", justify=LEFT).pack(fill=X)
+        # Add labels and radio buttons for selecting the sample period
+        self.add_label(frame1, "Sample period")
         self.period = StringVar()
-        ttk.Radiobutton(frame1, text="Past Day", variable=self.period,
-                                value="day").pack(anchor='w')
-        ttk.Radiobutton(frame1, text="Past Week", variable=self.period,
-                                value="week").pack(anchor='w')
-        ttk.Radiobutton(frame1, text="Past Month", variable=self.period,
-                                value="month").pack(anchor='w')
+        self.add_radiobutton(frame1, "Past Day", self.period, "day")
+        self.add_radiobutton(frame1, "Past Week", self.period, "week")
+        self.add_radiobutton(frame1, "Past Month", self.period, "month")
         self.period.set("day")
 
-        Label(frame1, text="Sort By", bg="black", fg="white", justify=LEFT).pack(fill=X)
-        self.sortby=IntVar()
-        ttk.Radiobutton(frame1, text="Magnitude", variable=self.sortby,
-                                value=0).pack(anchor='w')
-        ttk.Radiobutton(frame1, text="Location", variable=self.sortby,
-                                value=1).pack(anchor='w')
-        ttk.Radiobutton(frame1, text="Distance", variable=self.sortby,
-                                value=2).pack(anchor='w')
+        # Add labels and radio buttons for selecting the sorting method
+        self.add_label(frame1, "Sort By")
+        self.sortby = IntVar()
+        self.add_radiobutton(frame1, "Magnitude", self.sortby, 0)
+        self.add_radiobutton(frame1, "Location", self.sortby, 1)
+        self.add_radiobutton(frame1, "Distance", self.sortby, 2)
+        self.add_radiobutton(frame1, "Time", self.sortby, 3)
         self.sortby.set(0)
 
-        result_button = ttk.Button(frame1)
-        result_button.config(text="Get Results", command=self.submit)
+        # Add a button to submit the selected options
+        result_button = ttk.Button(frame1, text="Get Results", command=self.submit)
         result_button.pack(anchor='s')
 
-        result_box = Text(frame2, width=85, height=20)
-        scrollbar = Scrollbar(frame2, orient=VERTICAL, command=result_box.yview)
+        # Add a text box to display the results
+        self.result_box = Text(frame2, width=self.MASTER_WIDTH, height=self.MASTER_HEIGHT)
+        scrollbar = Scrollbar(frame2, orient=VERTICAL, command=self.result_box.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
-        result_box["yscrollcommand"] = scrollbar.set
-        result_box.pack(side=LEFT, fill=BOTH, expand=YES)
+        self.result_box["yscrollcommand"] = scrollbar.set
+        self.result_box.pack(side=LEFT, fill=BOTH, expand=YES)
 
+    # Function to add a label to a frame
+    def add_label(self, frame, text):
+        Label(frame, text=text, bg="black", fg="white", justify=LEFT).pack(fill=X)
+
+    # Function to add a radio button to a frame
+    def add_radiobutton(self, frame, text, variable, value):
+        ttk.Radiobutton(frame, text=text, variable=variable, value=value).pack(anchor='w')
+
+    # Function to submit the selected options
     def submit(self):
-
         self.clear()
-
         quakeData = quake_URL_base + "2.5_" + self.period.get() + ".geojson"
-
-        # Open the URL and read the data
-
         try:
             webUrl = urlopen (quakeData)
         except:
@@ -94,23 +97,19 @@ class USGS_Gui:
         else:
             if (webUrl.getcode() == 200):
                 data = webUrl.read()
-                sys.stdout.write = redirector
-                start = timer()
-                printResults(data, self.sortby)
-                print("Processed data in {:2.3f} seconds".format(timer() - start))
+                sys.stdout.write = self.redirector
+                printResults(data, self.sortby, self.MASTER_WIDTH)
                 sys.stdout.write = sys.__stdout__
             else:
                 print("Can't retrieve quake data " + str(webUrl.getcode()))
 
+    # Function to clear the results
     def clear(self):
+        self.result_box.delete(1.0, 'end')
 
-        result_box.delete(1.0, 'end')
-
-# Define stdout redirector so print output goes to GUI textbox
-# result_box widget is defined as global and set in USGS_Gui()
-
-def redirector(inputStr):
-    result_box.insert(INSERT, inputStr)
+    # Function to redirect the output to the GUI text box
+    def redirector(self, inputStr):
+        self.result_box.insert(INSERT, inputStr)
 
 def main():
 

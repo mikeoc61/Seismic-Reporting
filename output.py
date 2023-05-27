@@ -1,9 +1,11 @@
 from __future__ import print_function
 import json
+import datetime
+from timeit import default_timer as timer
 
 from IP_geo import get_IP_geo
 from haversine import calc_dist as dist
-from statistics import mean, mode, median
+from statistics import mean, median
 
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
@@ -41,11 +43,12 @@ def format_place(place):
 
     return (', '.join(_new_list))
 
-def printResults (data, sortby=0):
+def printResults (data, sortby=0, width=108):
 
     results = {}                # Store event data of interest
     magData = []                # Store all event magnitudes
     _sort = sortby.get()        # Convert IntVar to int to index sort function
+    start = timer()             # Start timer to measure elapsed time
 
     # Use get_IP_geo() to dynamically determine my location using IP addr lookup
 
@@ -57,49 +60,56 @@ def printResults (data, sortby=0):
 
     quakes_json = json.loads(data.decode('utf-8'))
 
-    if "title" in quakes_json["metadata"]:
-        count = quakes_json["metadata"]["count"];
-        print ('Recorded total of {} events from {}'.format(count, quakes_json["metadata"]["title"]))
-
     # For each event, calculate distance from my coordinates.
     # Build a new dictionary structure containing just event data of interest:
-    # results = {id : (magnitude, place, distance)}
+    # results = {id : (magnitude, place, distance, time)}
 
     for e in quakes_json["features"]:
         long = e["geometry"]["coordinates"][0]
         lat  = e["geometry"]["coordinates"][1]
         distance = dist(lat, long, my_lat, my_long)
+        seconds_since_epoch = e["properties"]["time"] / 1000.0
 
         if _sort == 1:
             place = format_place(e['properties']['place'])
         else:
             place = e['properties']['place']
 
-        results.update({e['id']:[e['properties']['mag'], place, distance]})
+        results.update({e['id']:[e['properties']['mag'], place, distance, seconds_since_epoch]})
         magData.append(e['properties']['mag'])
 
-    # Output Statistical Analysis of Magnitude data
+    # Output Header & Statistical Analysis of Magnitude data
 
-    print('\n{:*^85}\n'.format(' [Event statistical Analysis] '))
+    count = quakes_json["metadata"]["count"]
+    e_time = timer() - start
 
-    header = 'Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}' \
+    header = 'Recorded ' + str(count) + ' events from ' + quakes_json["metadata"]["title"]
+    stats = 'Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}' \
         .format(max(magData), mean(magData), median(magData), unique_mode(magData))
-
-    print('{:^85}'.format(header))
+    effort = 'Total processing time: {:2.2f} seconds'.format(e_time)
+    
+    print('{:*^{}}\n'.format(' [Event statistical Analysis] ', width))
+    print ('{:^{}}\n'.format (header, width))
+    print('{:^{}}\n'.format(stats, width))
+    print('{:^{}}'.format(effort, width))
 
     # Output Individual Event data sorted as determined by _sort variable
 
     if (_sort == 0):
-        header = ' [Individual events sorted by MAGNITUDE] '
+        header = ' [Events are sorted by MAGNITUDE] '
     elif (_sort == 1):
-        header = ' [Individual events sorted by LOCATION] '
+        header = ' [Events are sorted by LOCATION] '
     elif (_sort == 2):
-        header = ' [Events sorted by DISTANCE from: {} : {}] '.format(my_lat, my_long)
+        header = ' [Events are sorted by DISTANCE from: {} : {}] '.format(my_lat, my_long)
+    elif (_sort == 3):
+        header = ' [Events are sorted by DATE & TIME] '
     else:
         header = ' [Have no idea how we are sorting] '
 
-    print('\n{:*^85}\n'.format(header))
+    print('\n{:*^{}}\n'.format(header, width))
 
     for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
-        print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles'.format(
-           (event_id[1][0]), event_id[1][1], (event_id[1][2])))
+        dt = datetime.datetime.fromtimestamp(event_id[1][3])
+        ds = dt.strftime("%H:%M:%S on %m/%d")
+        print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles at {}'.format(
+           event_id[1][0], event_id[1][1], event_id[1][2], ds))

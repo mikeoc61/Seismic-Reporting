@@ -5,6 +5,12 @@
 +---------------------------------------------------------------------
 + Query, sort, format and output USGS earthquate data
 +
++ GeoJSON is a format for encoding a variety of geographic data structures. 
++ A GeoJSON object may represent a geometry, a feature, or a collection of features. 
++ GeoJSON uses the JSON standard.
++
++ See the GeoJSON site for more information: http://www.geojson.org/
++
 + Uses Tkinter (tcl/tk) to provide GUI
 +
 + See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
@@ -18,13 +24,12 @@ import sys
 from tkinter import *
 from tkinter import ttk
 from output import printResults
+from urllib.request import urlopen
 
 if sys.version_info <= (3, 0):
     print("Sorry, {} requires Python 3.x, detected version: {}".format \
           (sys.argv[0], str(sys.version_info[0]) + '.' + str(sys.version_info[1])))
     raise SystemExit()
-else:
-    from urllib.request import urlopen
 
 # URL Base for earthquake data feed. Will be appended to in USGS_Gui class
 
@@ -52,6 +57,7 @@ class USGS_Gui:
         # Add labels and radio buttons for selecting the sample period
         self.add_label(frame1, "Sample period")
         self.period = StringVar()
+        self.add_radiobutton(frame1, "Past Hour", self.period, "hour")
         self.add_radiobutton(frame1, "Past Day", self.period, "day")
         self.add_radiobutton(frame1, "Past Week", self.period, "week")
         self.add_radiobutton(frame1, "Past Month", self.period, "month")
@@ -65,6 +71,16 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "Distance", self.sortby, 2)
         self.add_radiobutton(frame1, "Time", self.sortby, 3)
         self.sortby.set(0)
+
+        # Add labels and radio buttons for selecting the Magnitude range
+        self.add_label(frame1, "Magnitude")
+        self.mag = StringVar()
+        self.add_radiobutton(frame1, "Significant", self.mag, 'significant')
+        self.add_radiobutton(frame1, "M4.5+", self.mag, '4.5')
+        self.add_radiobutton(frame1, "M2.5+", self.mag, '2.5')
+        self.add_radiobutton(frame1, "M1.0+", self.mag, '1.0')
+        self.add_radiobutton(frame1, "All Quakes", self.mag, 'all')
+        self.mag.set("1.0")
 
         # Add a button to submit the selected options
         result_button = ttk.Button(frame1, text="Get Results", command=self.submit)
@@ -88,7 +104,7 @@ class USGS_Gui:
     # Function to submit the selected options
     def submit(self):
         self.clear()
-        quakeData = quake_URL_base + "2.5_" + self.period.get() + ".geojson"
+        quakeData = quake_URL_base + self.mag.get() + "_" + self.period.get() + ".geojson"
         try:
             webUrl = urlopen (quakeData)
         except:

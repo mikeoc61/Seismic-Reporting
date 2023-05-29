@@ -10,10 +10,8 @@ from statistics import mean, median
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
 
-# Return largest, most commonly occuring numerical value when no single mode
-# value exists. Statistics.mode() throws an exception when there is no single
-# unique mode value
 
+# This function returns the most commonly occurring numerical value when no single mode value exists
 def unique_mode(a_list):
     numeral=[[a_list.count(n), n] for n in a_list]
     numeral.sort(key=lambda x:x[0], reverse=True)
@@ -55,6 +53,8 @@ def printResults (data, sortby=0, width=108):
     my_geo = get_IP_geo()
     my_lat = float(my_geo['loc'][0])
     my_long = float(my_geo['loc'][1])
+    my_city = my_geo['city']
+    my_region = my_geo['region']
 
     # Load the raw quake string data into a new local dictionary
 
@@ -100,7 +100,7 @@ def printResults (data, sortby=0, width=108):
     elif (_sort == 1):
         header = ' [Events are sorted by LOCATION] '
     elif (_sort == 2):
-        header = ' [Events are sorted by DISTANCE from: {} : {}] '.format(my_lat, my_long)
+        header = ' [Events are sorted by DISTANCE from: {}, {}] '.format(my_city, my_region)
     elif (_sort == 3):
         header = ' [Events are sorted by DATE & TIME] '
     else:
@@ -111,5 +111,9 @@ def printResults (data, sortby=0, width=108):
     for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
         dt = datetime.datetime.fromtimestamp(event_id[1][3])
         ds = dt.strftime("%H:%M:%S on %m/%d")
-        print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles at {}'.format(
-           event_id[1][0], event_id[1][1], event_id[1][2], ds))
+        mag = event_id[1][0]
+        loc = event_id[1][1]
+        distance = event_id[1][2]
+        if mag >= 0.0:
+            print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles at {}'.format(
+                mag, loc, distance, ds))

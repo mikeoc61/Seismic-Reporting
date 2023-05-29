@@ -115,5 +115,4 @@ def printResults (data, sortby=0, width=108):
         loc = event_id[1][1]
         distance = event_id[1][2]
         if mag >= 0.0:
-            print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles at {}'.format(
-                mag, loc, distance, ds))
+            print('{:4.2f} centered {:46.45} distance: {:>8.2f} miles at {}'.format(mag, loc, distance, ds))

@@ -16,22 +16,24 @@ def get_IP_geo():
 
       # Initialize data structure based on format expected from call to web service
       # URL = http://ipinfo.io/json
+      # Also see: https://ipinfo.io/missingauth for licensing terms
 
       geo_URL = "http://ipinfo.io/json"
 
       geo_json = {
         "ip": "123.123.123.123",
-        "city": "Dallas",
-        "region": "Texas",
+        "city": "Kailua-Kona",
+        "region": "Hawaii",
         "country": "US",
-        "loc": ["32.7787", "-96.8217"],
-        "postal": "75270",
-        "org": "SoftLayer Technologies Inc."
+        "loc": "19.6402,-155.9991",
+        "postal": "96740",
+        "org": "SoftLayer Technologies Inc.",
+        "timezone": "Pacific/Honolulu",
+        "readme": "https://ipinfo.io/missingauth"
         }
 
       # Open the URL and read the data, if successful decode bytestring and
       # split lat and long into separate strings
-
       try:
           webUrl = urlopen (geo_URL)
       except:

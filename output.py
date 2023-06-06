@@ -18,6 +18,12 @@ def unique_mode(a_list):
     #print(numeral)
     return(numeral[0][1])
 
+def check_type(val):
+    if isinstance(val, float):
+        return val
+    else:
+        return 0.00
+
 def format_place(place):
 
     _regions = ["Region", "Ocean", "Ridge", "Sea", "Passage", "Rise", "Gulf"]
@@ -41,7 +47,7 @@ def format_place(place):
 
     return (', '.join(_new_list))
 
-def printResults (data, sortby=0, width=108):
+def printResults (data, sortby=0, rev_order=False, width=108):
 
     results = {}                # Store event data of interest
     magData = []                # Store all event magnitudes
@@ -75,8 +81,8 @@ def printResults (data, sortby=0, width=108):
         else:
             place = e['properties']['place']
 
-        results.update({e['id']:[e['properties']['mag'], place, distance, seconds_since_epoch]})
-        magData.append(e['properties']['mag'])
+        results.update({e['id']:[check_type(e['properties']['mag']), place, distance, seconds_since_epoch]})
+        magData.append(check_type(e['properties']['mag']))
 
     # Output Header & Statistical Analysis of Magnitude data
 
@@ -108,7 +114,10 @@ def printResults (data, sortby=0, width=108):
 
     print('\n{:*^{}}\n'.format(header, width))
 
-    for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort]):
+    # iterate through sorted results and sent to stdout. Note have to use the .get method for 
+    # reverse variable value to ensure that we have a true boolean value as tkinter BooleanVar is
+    # interpreted differently.
+    for event_id in sorted(results.items(), key=lambda kv: kv[1][_sort], reverse=rev_order.get()):
         dt = datetime.datetime.fromtimestamp(event_id[1][3])
         ds = dt.strftime("%H:%M:%S on %m/%d")
         mag = event_id[1][0]

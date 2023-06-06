@@ -49,10 +49,16 @@ class USGS_Gui:
         frame0 = ttk.Panedwindow(master, orient=HORIZONTAL)
         frame0.pack(fill=BOTH, expand=True)
         # Creating two frames within the window
-        frame1 = ttk.Frame(frame0, width=100, height=self.HEIGHT, relief=SUNKEN)
+        frame1 = ttk.Frame(frame0, width=100, height=self.HEIGHT, relief=RAISED, padding=10)
         frame2 = ttk.Frame(frame0, width=self.WIDTH, height=self.HEIGHT, relief=SUNKEN)
         frame0.add(frame1, weight=1)
         frame0.add(frame2, weight=4)
+        self.style = ttk.Style()
+        self.style.configure('TButton', font='Arial 15', relief="flat")
+
+        # Button will respond to movement of mouse hover and press
+        self.style.map('TButton', foreground = [('active', '!disabled', 'yellow')],
+                                  relief=[('pressed', '!disabled', 'ridge')])
 
         # Add labels and radio buttons for selecting the sample period
         self.add_label(frame1, "Sample period")
@@ -82,9 +88,16 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "All Quakes", self.mag, 'all')
         self.mag.set("1.0")
 
+        # Add labels and radio buttons for selecting the sort order
+        self.add_label(frame1, "Sort Order")
+        self.reverse = BooleanVar()
+        self.add_radiobutton(frame1, "Ascending", self.reverse, False)
+        self.add_radiobutton(frame1, "Descending", self.reverse, True)
+        self.reverse.set(False)
+
         # Add a button to submit the selected options
         result_button = ttk.Button(frame1, text="Get Results", command=self.submit)
-        result_button.pack(anchor='s')
+        result_button.pack(anchor='s', pady=3)
 
         # Add a text box to display the results
         self.result_box = Text(frame2, width=self.MASTER_WIDTH, height=self.MASTER_HEIGHT)
@@ -93,13 +106,13 @@ class USGS_Gui:
         self.result_box["yscrollcommand"] = scrollbar.set
         self.result_box.pack(side=LEFT, fill=BOTH, expand=YES)
 
-    # Function to add a label to a frame
+    # Function to add a label to a frame and set default colors, relief style and vertical padding
     def add_label(self, frame, text):
-        Label(frame, text=text, bg="black", fg="white", justify=LEFT).pack(fill=X)
+        Label(frame, text=text, bg="blue", fg="white", relief='ridge', justify=LEFT).pack(fill=X, pady=3)
 
-    # Function to add a radio button to a frame
+    # Function to add a radio button to a frame and set default vertical padding
     def add_radiobutton(self, frame, text, variable, value):
-        ttk.Radiobutton(frame, text=text, variable=variable, value=value).pack(anchor='w')
+        ttk.Radiobutton(frame, text=text, variable=variable, value=value).pack(anchor='w', pady=1)
 
     # Function to submit the selected options
     def submit(self):
@@ -114,7 +127,7 @@ class USGS_Gui:
             if (webUrl.getcode() == 200):
                 data = webUrl.read()
                 sys.stdout.write = self.redirector
-                printResults(data, self.sortby, self.MASTER_WIDTH)
+                printResults(data, self.sortby, self.reverse, self.MASTER_WIDTH)
                 sys.stdout.write = sys.__stdout__
             else:
                 print("Can't retrieve quake data " + str(webUrl.getcode()))

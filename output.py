@@ -18,9 +18,10 @@ def unique_mode(a_list):
     #print(numeral)
     return(numeral[0][1])
 
+# Check argument type and force INT to FLOAT or return 0.00 if val type isn't either
 def check_type(val):
-    if isinstance(val, float):
-        return val
+    if isinstance(val, float) or isinstance(val, int) :
+        return float(val)
     else:
         return 0.00
 

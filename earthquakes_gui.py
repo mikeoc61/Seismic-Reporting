@@ -40,6 +40,7 @@ class USGS_Gui:
 
     MASTER_WIDTH = 106      # Width of GUI display window in character count
     MASTER_HEIGHT = 40      # Heigth of GUI display frame in character count
+    SIDE_WIDTH = 100        # Width of left panel
     WIDTH = 500             # Width of Result frame in pixels
     HEIGHT = 300            # Heigth of result frame in pixels
 
@@ -49,34 +50,23 @@ class USGS_Gui:
         frame0 = ttk.Panedwindow(master, orient=HORIZONTAL)
         frame0.pack(fill=BOTH, expand=True)
         # Creating two frames within the window
-        frame1 = ttk.Frame(frame0, width=100, height=self.HEIGHT, relief=RAISED, padding=10)
+        frame1 = ttk.Frame(frame0, width=self.SIDE_WIDTH, height=self.HEIGHT, relief=RAISED, padding=10)
         frame2 = ttk.Frame(frame0, width=self.WIDTH, height=self.HEIGHT, relief=SUNKEN)
         frame0.add(frame1, weight=1)
         frame0.add(frame2, weight=4)
+        
         self.style = ttk.Style()
+        self.style.theme_use('aqua')
         self.style.configure('TButton', font='Arial 15', relief="flat")
 
-        # Button will respond to movement of mouse hover and press
-        self.style.map('TButton', foreground = [('active', '!disabled', 'yellow')],
-                                  relief=[('pressed', '!disabled', 'ridge')])
-
         # Add labels and radio buttons for selecting the sample period
-        self.add_label(frame1, "Sample period")
+        self.add_label(frame1, "Time Period")
         self.period = StringVar()
         self.add_radiobutton(frame1, "Past Hour", self.period, "hour")
         self.add_radiobutton(frame1, "Past Day", self.period, "day")
         self.add_radiobutton(frame1, "Past Week", self.period, "week")
         self.add_radiobutton(frame1, "Past Month", self.period, "month")
         self.period.set("day")
-
-        # Add labels and radio buttons for selecting the sorting method
-        self.add_label(frame1, "Sort By")
-        self.sortby = IntVar()
-        self.add_radiobutton(frame1, "Magnitude", self.sortby, 0)
-        self.add_radiobutton(frame1, "Location", self.sortby, 1)
-        self.add_radiobutton(frame1, "Distance", self.sortby, 2)
-        self.add_radiobutton(frame1, "Time", self.sortby, 3)
-        self.sortby.set(0)
 
         # Add labels and radio buttons for selecting the Magnitude range
         self.add_label(frame1, "Magnitude")
@@ -88,6 +78,15 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "All Quakes", self.mag, 'all')
         self.mag.set("1.0")
 
+        # Add labels and radio buttons for selecting the sorting method
+        self.add_label(frame1, "Sort By")
+        self.sortby = IntVar()
+        self.add_radiobutton(frame1, "Magnitude", self.sortby, 0)
+        self.add_radiobutton(frame1, "Location", self.sortby, 1)
+        self.add_radiobutton(frame1, "Distance", self.sortby, 2)
+        self.add_radiobutton(frame1, "Time", self.sortby, 3)
+        self.sortby.set(0)
+
         # Add labels and radio buttons for selecting the sort order
         self.add_label(frame1, "Sort Order")
         self.reverse = BooleanVar()
@@ -95,8 +94,11 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "Descending", self.reverse, True)
         self.reverse.set(False)
 
+        # Add dividing line between radio buttons and submit button
+        self.add_line(frame1, 'white')
+
         # Add a button to submit the selected options
-        result_button = ttk.Button(frame1, text="Get Results", command=self.submit)
+        result_button = Button(frame1, text="Get Results", command=self.submit, bg='white', fg='blue', relief='sunken')
         result_button.pack(anchor='s', pady=3)
 
         # Add a text box to display the results
@@ -106,13 +108,20 @@ class USGS_Gui:
         self.result_box["yscrollcommand"] = scrollbar.set
         self.result_box.pack(side=LEFT, fill=BOTH, expand=YES)
 
-    # Function to add a label to a frame and set default colors, relief style and vertical padding
+    # Function to add a tk style label to a frame and set default colors, relief style and vertical padding
     def add_label(self, frame, text):
-        Label(frame, text=text, bg="blue", fg="white", relief='ridge', justify=LEFT).pack(fill=X, pady=3)
+        Label(frame, text=text, bg="blue", fg="white", relief='ridge', justify=LEFT).pack(fill=X, pady=5)
 
-    # Function to add a radio button to a frame and set default vertical padding
+    # Function to add a ttk style radio button to a frame and set default vertical padding
     def add_radiobutton(self, frame, text, variable, value):
         ttk.Radiobutton(frame, text=text, variable=variable, value=value).pack(anchor='w', pady=1)
+
+    # Create a vertical canvas and draw a dividing line
+    # Parameters are: canvas.create_line(x1, y1, x2, y2, options)
+    def add_line(self, frame, color):
+        canvas = Canvas(frame, width=self.SIDE_WIDTH, height=8)
+        canvas.pack()
+        canvas.create_line(0, 8, self.SIDE_WIDTH, 8, fill=color)
 
     # Function to submit the selected options
     def submit(self):

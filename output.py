@@ -48,7 +48,7 @@ def format_place(place):
 
     return (', '.join(_new_list))
 
-def printResults (data, sortby=0, rev_order=False, width=108):
+def printResults (data, sortby=0, rev_order=False, width=10):
 
     results = {}                # Store event data of interest
     magData = []                # Store all event magnitudes
@@ -91,8 +91,11 @@ def printResults (data, sortby=0, rev_order=False, width=108):
     e_time = timer() - start
 
     header = 'Recorded ' + str(count) + ' events from ' + quakes_json["metadata"]["title"]
-    stats = 'Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}' \
+    if len(magData):
+        stats = 'Magnitude Max = {:2.2f}, Mean = {:2.2f}, Median = {:2.2f}, Mode = {:2.2f}' \
         .format(max(magData), mean(magData), median(magData), unique_mode(magData))
+    else:
+        stats = '** No results found. Try reducing Magnitude or increasing Time Period **'
     effort = 'Total processing time: {:2.2f} seconds'.format(e_time)
     
     print('{:*^{}}\n'.format(' [Event statistical Analysis] ', width))

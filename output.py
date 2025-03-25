@@ -8,7 +8,7 @@ from haversine import calc_dist as dist
 from statistics import mean, median
 
 __author__    = "Michael E. O'Connor"
-__copyright__ = "Copyright 2018"
+__copyright__ = "Copyright 2025"
 
 
 # This function returns the most commonly occurring numerical value when no single mode value exists

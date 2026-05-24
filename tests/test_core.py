@@ -215,6 +215,20 @@ def test_parse_quakes_empty(empty_bytes: bytes) -> None:
     assert meta["count"] == 0
 
 
+def test_parse_quakes_time_is_local_aware(sample_bytes: bytes) -> None:
+    """Event times are timezone-aware and converted to the host local zone.
+
+    The fixture's Pahala event carries epoch 1714500000000 ms, i.e. the
+    instant 2024-04-30 18:00:00 UTC. Aware-to-aware equality compares the
+    underlying instant, so this holds regardless of the host's zone.
+    """
+    quakes, _ = parse_quakes(sample_bytes, DEFAULT_ORIGIN)
+    pahala = next(q for q in quakes if q.place.startswith("10km SE of Pahala"))
+    assert pahala.time.tzinfo is not None
+    assert pahala.time == datetime.datetime(
+        2024, 4, 30, 18, 0, 0, tzinfo=datetime.timezone.utc)
+
+
 # --------------------------------------------------------------------------
 # magnitude_summary
 # --------------------------------------------------------------------------
@@ -238,7 +252,8 @@ def test_magnitude_summary_empty() -> None:
 
 def _quake(mag: float, place: str, dist: float, day: int) -> Quake:
     return Quake(mag=mag, place=place, distance_km=dist,
-                 time=datetime.datetime(2024, 1, day))
+                 time=datetime.datetime(2024, 1, day,
+                                        tzinfo=datetime.timezone.utc))
 
 
 @pytest.fixture

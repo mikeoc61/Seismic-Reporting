@@ -56,7 +56,7 @@ class Quake:
     mag: float
     place: str  # raw USGS place string
     distance_km: float
-    time: datetime.datetime
+    time: datetime.datetime  # timezone-aware, host local zone
 
 
 @dataclass
@@ -184,11 +184,16 @@ def parse_quakes(
     for feature in geo['features']:
         lon, lat = feature['geometry']['coordinates'][0:2]
         props = feature['properties']
+        # USGS 'time' is epoch milliseconds (UTC). Decode as an aware UTC
+        # instant, then convert to the host's local zone for display.
+        event_time = datetime.datetime.fromtimestamp(
+            props['time'] / 1000.0, tz=datetime.timezone.utc
+        ).astimezone()
         quakes.append(Quake(
             mag=check_type(props['mag']),
             place=props['place'],
             distance_km=calc_dist(lat, lon, origin.lat, origin.lon),
-            time=datetime.datetime.fromtimestamp(props['time'] / 1000.0),
+            time=event_time,
         ))
 
     metadata = geo.get('metadata', {})

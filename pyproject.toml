@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "seismic-reporting"
-version = "1.0.0"
+version = "1.1.0"
 description = "Query the USGS FDSN event service and report earthquakes sorted by magnitude, location, distance, or time."
 readme = "README.md"
 requires-python = ">=3.10"

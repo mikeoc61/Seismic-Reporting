@@ -26,7 +26,7 @@ from seismic_reporting.core import (
 )
 from seismic_reporting.haversine import EARTH_RADIUS_KM, calc_dist
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Michael E. O'Connor"
 
 __all__ = [

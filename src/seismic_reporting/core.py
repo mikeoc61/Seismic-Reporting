@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from operator import attrgetter
 from statistics import mean, median
 from typing import Any, cast
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -147,16 +148,30 @@ def fetch_geojson(url: str, timeout: float = 10) -> bytes:
     """Fetch raw GeoJSON bytes from a USGS URL.
 
     Returns an empty FeatureCollection on HTTP 204 (FDSN: query valid but
-    zero events matched). Raises URLError/HTTPError on transport failure,
-    RuntimeError on any other non-200 response.
+    zero events matched). Any failure - network error, timeout, or a
+    non-200/204 HTTP status - is raised as RuntimeError with a message
+    suitable for display to the user, so callers need only catch one type.
     """
-    response = urlopen(url, timeout=timeout)
-    code = response.getcode()
-    if code == 204:
-        return _EMPTY_GEOJSON
-    if code != 200:
-        raise RuntimeError('USGS server returned HTTP {}'.format(code))
-    return cast(bytes, response.read())
+    try:
+        response = urlopen(url, timeout=timeout)
+        code = response.getcode()
+        if code == 204:
+            return _EMPTY_GEOJSON
+        if code != 200:
+            raise RuntimeError('USGS server returned HTTP {}'.format(code))
+        return cast(bytes, response.read())
+    except TimeoutError as err:
+        raise RuntimeError(
+            'USGS request timed out after {:g}s; the query range may be '
+            'too large'.format(timeout)) from err
+    except HTTPError as err:
+        detail = ' '.join(err.read().decode('utf-8', 'replace').split())
+        message = 'USGS rejected the query (HTTP {})'.format(err.code)
+        if detail:
+            message = '{}: {}'.format(message, detail[:300])
+        raise RuntimeError(message) from err
+    except OSError as err:
+        raise RuntimeError('USGS request failed: {}'.format(err)) from err
 
 
 def parse_quakes(

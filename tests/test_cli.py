@@ -107,3 +107,15 @@ def test_main_missing_file_returns_1(
     rc = cli.main(["--file", "/nonexistent/path/quakes.geojson"])
     assert rc == 1
     assert "Error reading" in capsys.readouterr().err
+
+
+def test_main_network_error_returns_1(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A failed fetch is reported to stderr with exit status 1, no traceback."""
+    def boom(url: str, timeout: float = 10) -> bytes:
+        raise RuntimeError("USGS request timed out after 10s")
+    monkeypatch.setattr(cli, "fetch_geojson", boom)
+    rc = cli.main(["--days", "1"])
+    assert rc == 1
+    assert "Error retrieving data" in capsys.readouterr().err

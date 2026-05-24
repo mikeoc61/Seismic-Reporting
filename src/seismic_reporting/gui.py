@@ -14,7 +14,6 @@ import datetime
 import tkinter as tk
 from timeit import default_timer as timer
 from tkinter import ttk
-from urllib.error import HTTPError, URLError
 
 from seismic_reporting.core import (
     DEFAULT_ORIGIN,
@@ -151,7 +150,7 @@ class USGS_Gui:
 
         try:
             data = fetch_geojson(url)
-        except (URLError, HTTPError, RuntimeError) as err:
+        except RuntimeError as err:
             self._show("Error retrieving data from:\n{}\n\n{}".format(url, err))
             return
 

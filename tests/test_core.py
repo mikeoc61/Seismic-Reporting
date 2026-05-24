@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import datetime
+import io
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -169,6 +171,42 @@ def test_fetch_geojson_non_200_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(core, "urlopen",
                          lambda url, timeout=10: _FakeResponse(500))
     with pytest.raises(RuntimeError, match="HTTP 500"):
+        fetch_geojson("http://example.test/q")
+
+
+def test_fetch_geojson_timeout_becomes_runtimeerror(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A read timeout is normalised to RuntimeError, not raised raw."""
+    def raise_timeout(url: str, timeout: float = 10) -> bytes:
+        raise TimeoutError("the read operation timed out")
+    monkeypatch.setattr(core, "urlopen", raise_timeout)
+    with pytest.raises(RuntimeError, match="timed out"):
+        fetch_geojson("http://example.test/q")
+
+
+def test_fetch_geojson_network_error_becomes_runtimeerror(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A transport-level OSError is normalised to RuntimeError."""
+    def raise_oserror(url: str, timeout: float = 10) -> bytes:
+        raise OSError("name resolution failed")
+    monkeypatch.setattr(core, "urlopen", raise_oserror)
+    with pytest.raises(RuntimeError, match="request failed"):
+        fetch_geojson("http://example.test/q")
+
+
+def test_fetch_geojson_http_error_surfaces_server_detail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An HTTP error includes the USGS response body, not just the status."""
+    body = b"Number of earthquakes (45123) exceeds search limit of 20000."
+
+    def raise_http_error(url: str, timeout: float = 10) -> bytes:
+        raise HTTPError(url, 400, "Bad Request", {}, io.BytesIO(body))
+
+    monkeypatch.setattr(core, "urlopen", raise_http_error)
+    with pytest.raises(RuntimeError, match="exceeds search limit of 20000"):
         fetch_geojson("http://example.test/q")
 
 

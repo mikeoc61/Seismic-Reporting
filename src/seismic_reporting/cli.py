@@ -18,7 +18,6 @@ import datetime
 import signal
 import sys
 from timeit import default_timer as timer
-from urllib.error import HTTPError, URLError
 
 from seismic_reporting.core import (
     DEFAULT_ORIGIN,
@@ -115,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
                              radius_km=args.radius, limit=args.limit)
         try:
             data = fetch_geojson(url)
-        except (URLError, HTTPError, RuntimeError) as err:
+        except RuntimeError as err:
             print('Error retrieving data: {}'.format(err), file=sys.stderr)
             return 1
         period_label = _period_label(args.days)

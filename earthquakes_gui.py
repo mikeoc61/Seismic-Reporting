@@ -2,26 +2,34 @@
 # -*- coding: utf-8 -*-
 """Tkinter GUI front end for the Seismic-Reporting tool.
 
-Fetches USGS GeoJSON earthquake feeds and displays events sorted by
-magnitude, location, distance or time.
+Queries the USGS FDSN event service and displays earthquakes sorted by
+magnitude, location, distance or time. Distances are measured from a
+fixed home location (DEFAULT_ORIGIN); the command-line front end (cli.py)
+exposes arbitrary coordinates and radial filtering.
 
-See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+FDSN event service: https://earthquake.usgs.gov/fdsnws/event/1/
 """
 
 __author__    = 'Michael E. OConnor'
-__copyright__ = 'Copyright 2023'
+__copyright__ = 'Copyright 2025'
 
+import datetime
 import tkinter as tk
 from timeit import default_timer as timer
 from tkinter import ttk
 from urllib.error import HTTPError, URLError
 
-from IP_geo import get_IP_geo
-from output import (fetch_geojson, format_report, magnitude_summary,
-                    parse_quakes, sort_quakes)
+from output import (DEFAULT_ORIGIN, build_fdsn_url, fetch_geojson,
+                    format_report, magnitude_summary, parse_quakes,
+                    sort_quakes)
 
-# Base URL for the USGS feed; magnitude and period are appended in submit().
-QUAKE_URL_BASE = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
+# Map the GUI period radio buttons to a look-back window in days.
+_PERIOD_DAYS = {
+    'hour':  1.0 / 24.0,
+    'day':   1.0,
+    'week':  7.0,
+    'month': 30.0,
+}
 
 
 class USGS_Gui:
@@ -60,14 +68,14 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "Past Month", self.period, "month")
         self.period.set("day")
 
-        # Magnitude range selector
+        # Minimum-magnitude selector (values are FDSN minmagnitude floats)
         self.add_label(frame1, "Magnitude")
         self.mag = tk.StringVar()
-        self.add_radiobutton(frame1, "Significant", self.mag, 'significant')
+        self.add_radiobutton(frame1, "M6.0+", self.mag, '6.0')
         self.add_radiobutton(frame1, "M4.5+", self.mag, '4.5')
         self.add_radiobutton(frame1, "M2.5+", self.mag, '2.5')
         self.add_radiobutton(frame1, "M1.0+", self.mag, '1.0')
-        self.add_radiobutton(frame1, "All Quakes", self.mag, 'all')
+        self.add_radiobutton(frame1, "All", self.mag, '0.0')
         self.mag.set("1.0")
 
         # Sort field selector
@@ -122,8 +130,12 @@ class USGS_Gui:
     def submit(self):
         """Fetch, process and display results for the current selections."""
         self.clear()
-        url = (QUAKE_URL_BASE + self.mag.get() + "_"
-               + self.period.get() + ".geojson")
+
+        days = _PERIOD_DAYS[self.period.get()]
+        starttime = (datetime.datetime.now(datetime.timezone.utc)
+                     - datetime.timedelta(days=days)
+                     ).strftime('%Y-%m-%dT%H:%M:%S')
+        url = build_fdsn_url(float(self.mag.get()), starttime)
 
         try:
             data = fetch_geojson(url)
@@ -132,11 +144,10 @@ class USGS_Gui:
             return
 
         start = timer()
-        origin = get_IP_geo()
-        quakes, meta = parse_quakes(data, origin)
+        quakes, meta = parse_quakes(data, DEFAULT_ORIGIN)
         stats = magnitude_summary(quakes)        # before sort: feed order
         quakes = sort_quakes(quakes, self.sortby.get(), self.reverse.get())
-        report = format_report(quakes, meta, origin, self.sortby.get(),
+        report = format_report(quakes, meta, DEFAULT_ORIGIN, self.sortby.get(),
                                stats, timer() - start, self.MASTER_WIDTH)
         self._show(report)
 

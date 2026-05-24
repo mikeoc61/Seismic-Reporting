@@ -1,19 +1,46 @@
 # Seismic-Reporting
 
-Python3 program which queries USGS earthquake historical data and outputs results
-sorted by distance from a given coordinate. For more info on the data feed, please
-see: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+Queries the USGS earthquake catalog and lists events sorted by magnitude,
+location, distance, or time. Distance is measured (Haversine) from a chosen
+observer coordinate.
 
-IP_geo.py contains code to dynamically fetch current location data based on IP lookup
+## Data source
 
-earthquakes.py is the command line version and imports haversine.py and IP_geo.py
+Events come from the USGS FDSN event service, which supports server-side
+filtering by magnitude, time window, and radial region:
 
-earthquakes_gui.py is the GUI version built with Tkinter and relies on output.py.
-The GUI version is much more powerful as it allows dynamic control of both the
-sample time interval as well as the sort criteria (Magnitude, Place, Distance)
+<https://earthquake.usgs.gov/fdsnws/event/1/>
 
-output.py is imported by earthquakes_gui.py and does the actual output formatting.
-This module also imports haversine.py and imports IP_geo.py to determine local
-coordinates based upon IP address lookup from "http://ipinfo.io/json"
+## Files
 
-The Haversine formula is used to calculate distance relative to starting coordinates
+- `output.py` — core logic: FDSN URL construction, GeoJSON parsing into
+  `Quake` records, magnitude statistics, sorting, and report formatting.
+  No GUI dependency; shared by both front ends.
+- `cli.py` — command-line front end. Exposes observer coordinates, radial
+  filtering, magnitude, time window, and sort options as arguments.
+- `earthquakes_gui.py` — Tkinter GUI front end. Distances are measured from
+  a fixed home location (`DEFAULT_ORIGIN` in `output.py`).
+- `haversine.py` — great-circle distance between two coordinates.
+
+## Command-line usage
+
+```
+cli.py                                  # M2.5+, past day, near home
+cli.py --radius 300 --min-mag 1.0       # within 300 km of home
+cli.py --lat 37.77 --lon -122.42 --radius 100 --sort time --reverse
+cli.py --file saved.geojson --sort magnitude
+```
+
+Run `cli.py --help` for the full option list. `--file` reads a saved
+GeoJSON document instead of querying USGS (useful offline or for testing).
+
+## GUI usage
+
+```
+python3 earthquakes_gui.py
+```
+
+Select a time period, minimum magnitude, sort field, and sort order, then
+press **Get Results**. The GUI queries globally and sorts by distance from
+the fixed home location; use `cli.py --radius` for radial filtering or a
+different observer coordinate.

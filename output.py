@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 """Core logic for the Seismic-Reporting tool.
 
-GeoJSON is decoded into Quake records; statistics, sorting and report
+Builds USGS FDSN event-service queries, decodes the GeoJSON response into
+Quake records, and renders sorted reports. Statistics, sorting and
 formatting are pure functions with no GUI dependency, so the same pipeline
-can back the Tkinter GUI or a future command-line front end.
+backs both the Tkinter GUI and the command-line front end.
 
-See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+FDSN event service: https://earthquake.usgs.gov/fdsnws/event/1/
 """
 
 import datetime
@@ -15,12 +16,16 @@ from dataclasses import dataclass
 from operator import attrgetter
 from statistics import mean, median
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from haversine import calc_dist
 
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2025"
+
+# USGS FDSN event query endpoint (GeoJSON output).
+FDSN_ENDPOINT = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 # Sort codes. Values intentionally match the Tkinter IntVar used by the GUI.
 SORT_MAGNITUDE = 0
@@ -35,6 +40,11 @@ _SORT_LABEL = {
     SORT_TIME:      "DATE & TIME",
 }
 
+# Returned by fetch_geojson() when FDSN reports HTTP 204 (zero matches).
+_EMPTY_GEOJSON = (b'{"type":"FeatureCollection",'
+                  b'"metadata":{"count":0,"title":"USGS FDSN query (no events)"},'
+                  b'"features":[]}')
+
 
 @dataclass
 class Quake:
@@ -43,6 +53,19 @@ class Quake:
     place: str                      # raw USGS place string
     distance_km: float
     time: datetime.datetime
+
+
+@dataclass
+class Origin:
+    """Observer location: the reference point for distance calculations."""
+    lat: float
+    lon: float
+    name: str
+
+
+# Default observer: a fixed home location replaces the old IP-geolocation
+# lookup (a self-hosted tool does not move).
+DEFAULT_ORIGIN = Origin(19.6402, -155.9991, "Kailua-Kona, Hawaii")
 
 
 # --------------------------------------------------------------------------
@@ -89,32 +112,59 @@ def _place_key(quake):
 
 
 # --------------------------------------------------------------------------
-# Pipeline: fetch -> parse -> (summary) -> sort -> format
+# Pipeline: build URL -> fetch -> parse -> (summary) -> sort -> format
 # --------------------------------------------------------------------------
 
-def fetch_geojson(url, timeout=10):
-    """Fetch raw GeoJSON bytes from a USGS feed URL.
+def build_fdsn_url(min_mag, starttime, endtime=None,
+                   lat=None, lon=None, radius_km=None,
+                   orderby='time', limit=None):
+    """Construct a USGS FDSN event-query URL (GeoJSON format).
 
-    Raises URLError/HTTPError on transport failure, RuntimeError on a
-    non-200 response.
+    `starttime`/`endtime` are ISO-8601 strings (UTC assumed). When `lat`,
+    `lon` and `radius_km` are all supplied the query is restricted to that
+    radial region; otherwise it is global. Server-side filtering replaces
+    the old client-side distance filtering.
+    """
+    params = {
+        'format': 'geojson',
+        'starttime': starttime,
+        'minmagnitude': min_mag,
+        'orderby': orderby,
+    }
+    if endtime is not None:
+        params['endtime'] = endtime
+    if lat is not None and lon is not None and radius_km is not None:
+        params['latitude'] = lat
+        params['longitude'] = lon
+        params['maxradiuskm'] = radius_km
+    if limit is not None:
+        params['limit'] = limit
+    return FDSN_ENDPOINT + '?' + urlencode(params)
+
+
+def fetch_geojson(url, timeout=10):
+    """Fetch raw GeoJSON bytes from a USGS URL.
+
+    Returns an empty FeatureCollection on HTTP 204 (FDSN: query valid but
+    zero events matched). Raises URLError/HTTPError on transport failure,
+    RuntimeError on any other non-200 response.
     """
     response = urlopen(url, timeout=timeout)
-    if response.getcode() != 200:
-        raise RuntimeError(
-            'USGS server returned HTTP {}'.format(response.getcode()))
+    code = response.getcode()
+    if code == 204:
+        return _EMPTY_GEOJSON
+    if code != 200:
+        raise RuntimeError('USGS server returned HTTP {}'.format(code))
     return response.read()
 
 
 def parse_quakes(data, origin):
     """Decode GeoJSON bytes into (list[Quake], metadata dict).
 
-    Quakes are returned in feed order. `origin` is the dict from
-    IP_geo.get_IP_geo(); its 'loc' field supplies the reference
-    coordinates for the distance calculation.
+    Quakes are returned in feed order. `origin` is an Origin instance;
+    its coordinates are the reference for the distance calculation.
     """
     geo = json.loads(data.decode('utf-8'))
-    my_lat = float(origin['loc'][0])
-    my_lon = float(origin['loc'][1])
 
     quakes = []
     for feature in geo['features']:
@@ -123,13 +173,14 @@ def parse_quakes(data, origin):
         quakes.append(Quake(
             mag=check_type(props['mag']),
             place=props['place'],
-            distance_km=calc_dist(lat, lon, my_lat, my_lon),
+            distance_km=calc_dist(lat, lon, origin.lat, origin.lon),
             time=datetime.datetime.fromtimestamp(props['time'] / 1000.0),
         ))
 
+    metadata = geo.get('metadata', {})
     meta = {
-        'count': geo['metadata']['count'],
-        'title': geo['metadata']['title'],
+        'count': metadata.get('count', len(quakes)),
+        'title': metadata.get('title', 'USGS FDSN Earthquakes'),
     }
     return quakes, meta
 
@@ -167,7 +218,7 @@ def format_report(quakes, meta, origin, sort_code, stats_line, elapsed_s, width)
 
     `quakes` should already be sorted; `stats_line` is the precomputed
     magnitude_summary() result. Returns the string the GUI inserts into
-    its text box (or a CLI prints to stdout).
+    its text box (or the CLI prints to stdout).
     """
     out = []
 
@@ -180,8 +231,7 @@ def format_report(quakes, meta, origin, sort_code, stats_line, elapsed_s, width)
         'Total processing time: {:2.2f} seconds'.format(elapsed_s), width))
 
     if sort_code == SORT_DISTANCE:
-        banner = ' [Events are sorted by DISTANCE from: {}, {}] '.format(
-            origin['city'], origin['region'])
+        banner = ' [Events are sorted by DISTANCE from: {}] '.format(origin.name)
     elif sort_code in _SORT_LABEL:
         banner = ' [Events are sorted by {}] '.format(_SORT_LABEL[sort_code])
     else:

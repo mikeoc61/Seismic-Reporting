@@ -133,3 +133,4 @@ Temporary Items
 
 ./venv/*
 seismic-step6.tar.gz
+.venv/

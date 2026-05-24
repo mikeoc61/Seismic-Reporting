@@ -17,6 +17,8 @@ The package uses a standard `src/` layout and a PEP 517 build. Install it
 (editable, for development) into a virtual environment:
 
 ```
+git clone https://github.com/mikeoc61/Seismic-Reporting
+cd Seismic-Reporting
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"

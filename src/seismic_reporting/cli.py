@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import signal
 import sys
 from timeit import default_timer as timer
 from urllib.error import HTTPError, URLError
@@ -87,6 +88,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     """Run a query (or load a file) and print the formatted report."""
+    # Restore default SIGPIPE handling so 'seismic | head' terminates
+    # quietly when the reader closes the pipe, instead of raising
+    # BrokenPipeError. SIGPIPE is absent on Windows, hence the guard.
+    if hasattr(signal, 'SIGPIPE'):
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     args = parse_args(argv)
     origin = Origin(args.lat, args.lon, args.name)
     sort_code = _SORT_CODES[args.sort]

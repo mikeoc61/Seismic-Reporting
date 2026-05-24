@@ -56,17 +56,25 @@ def test_format_place_comma_form() -> None:
     assert format_place("10km SE of Pahala, Hawaii") == "Hawaii, 10km SE of Pahala"
 
 
-def test_format_place_region_branch_is_dead() -> None:
-    """KNOWN BUG (deferred): the region-keyword branch never fires for real data.
+def test_format_place_region_name_with_keyword_unchanged() -> None:
+    """A comma-less region name is already region-led; returned unchanged."""
+    assert format_place("Southern Mid-Atlantic Ridge") == "Southern Mid-Atlantic Ridge"
+    assert format_place("Balleny Islands region") == "Balleny Islands region"
 
-    `format_place` matches against capitalised keywords ("Ridge", "Ocean", ...)
-    but tests `place.capitalize().split()`, which case-folds every word after
-    the first. A mid-string "Ridge" therefore fails the membership check and
-    the string is comma-reordered instead of being left in source order.
-    This asserts the current (buggy) behaviour so a future fix is visible.
+
+def test_format_place_region_name_without_keyword_unchanged() -> None:
+    """A comma-less string with no region keyword is also returned unchanged."""
+    assert format_place("south of the Fiji Islands") == "south of the Fiji Islands"
+
+
+def test_format_place_comma_region_containing_keyword() -> None:
+    """A comma-form string is reversed even when its region holds a keyword.
+
+    'Ocean City, Maryland' has a comma, so it is detail-then-region and must
+    be reversed - the keyword 'Ocean' must not misclassify it as a region
+    name. This is the false-positive the old keyword heuristic risked.
     """
-    out = format_place("100km NW of nowhere, Carlsberg Ridge")
-    assert out == "Carlsberg Ridge, 100km NW of nowhere"
+    assert format_place("Ocean City, Maryland") == "Maryland, Ocean City"
 
 
 # --------------------------------------------------------------------------

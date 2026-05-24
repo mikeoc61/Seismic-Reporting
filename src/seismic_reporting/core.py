@@ -85,18 +85,19 @@ def check_type(val: Any) -> float:
 
 
 def format_place(place: str) -> str:
-    """Re-order a USGS place string so the broad region leads."""
-    _regions = ["Region", "Ocean", "Ridge", "Sea", "Passage", "Rise", "Gulf"]
+    """Re-order a USGS place string so the broad region leads.
 
-    _new_list = place.capitalize().split()
-    for word in _new_list:
-        if word in _regions:
-            return ' '.join(_new_list)
+    Comma form ('10km SE of Pahala, Hawaii') is reversed region-first.
+    Region-name form ('Southern Mid-Atlantic Ridge'), which has no comma,
+    is already region-led and returned unchanged.
+    """
+    if ', ' not in place:
+        return place
 
-    _new_list = place.split(', ')
-    _new_list.reverse()
-    _new_list[0] = _new_list[0].title()
-    return ', '.join(_new_list)
+    parts = place.split(', ')
+    parts.reverse()
+    parts[0] = parts[0].title()
+    return ', '.join(parts)
 
 
 def _place_key(quake: Quake) -> str:

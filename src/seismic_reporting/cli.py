@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
 
     start = timer()
     quakes, meta = parse_quakes(data, origin)
-    stats = magnitude_summary(quakes)               # before sort: feed order
+    stats = magnitude_summary(quakes)
     quakes = sort_quakes(quakes, sort_code, args.reverse)
     report = format_report(quakes, meta, origin, sort_code, stats,
                            timer() - start, args.width)

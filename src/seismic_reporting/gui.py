@@ -157,7 +157,7 @@ class USGS_Gui:
 
         start = timer()
         quakes, meta = parse_quakes(data, DEFAULT_ORIGIN)
-        stats = magnitude_summary(quakes)        # before sort: feed order
+        stats = magnitude_summary(quakes)
         quakes = sort_quakes(quakes, self.sortby.get(), self.reverse.get())
         report = format_report(quakes, meta, DEFAULT_ORIGIN, self.sortby.get(),
                                stats, timer() - start, self.MASTER_WIDTH)

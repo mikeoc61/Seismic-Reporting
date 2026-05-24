@@ -77,18 +77,6 @@ DEFAULT_ORIGIN: Origin = Origin(19.6402, -155.9991, "Kailua-Kona, Hawaii")
 # Helpers (behaviour carried verbatim from the original implementation)
 # --------------------------------------------------------------------------
 
-def unique_mode(values: list[float]) -> float:
-    """Return the most frequent value; ties resolved toward the larger count.
-
-    NOTE: when every value is distinct (the common case for float
-    magnitudes) this returns the *first* element of `values`, so callers
-    must pass the list in a stable, meaningful order. See magnitude_summary.
-    """
-    counted = [[values.count(n), n] for n in values]
-    counted.sort(key=lambda x: x[0], reverse=True)
-    return counted[0][1]
-
-
 def check_type(val: Any) -> float:
     """Coerce an int/float to float; anything else (e.g. JSON null) -> 0.00."""
     if isinstance(val, (float, int)):
@@ -207,16 +195,16 @@ def parse_quakes(
 def magnitude_summary(quakes: list[Quake]) -> str:
     """One-line magnitude statistics, or a 'no results' notice.
 
-    Must be called on the feed-order list (before sorting): unique_mode
-    is order-sensitive when magnitudes are distinct.
+    All three statistics are order-independent, so this may be called at
+    any point in the pipeline.
     """
     mags = [q.mag for q in quakes]
     if not mags:
         return ('** No results found. '
                 'Try reducing Magnitude or increasing Time Period **')
     return ('Magnitude Max = {:2.2f}, Mean = {:2.2f}, '
-            'Median = {:2.2f}, Mode = {:2.2f}').format(
-        max(mags), mean(mags), median(mags), unique_mode(mags))
+            'Median = {:2.2f}').format(
+        max(mags), mean(mags), median(mags))
 
 
 def sort_quakes(

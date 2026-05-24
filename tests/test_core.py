@@ -24,7 +24,6 @@ from seismic_reporting.core import (
     magnitude_summary,
     parse_quakes,
     sort_quakes,
-    unique_mode,
 )
 
 # --------------------------------------------------------------------------
@@ -68,20 +67,6 @@ def test_format_place_region_branch_is_dead() -> None:
     """
     out = format_place("100km NW of nowhere, Carlsberg Ridge")
     assert out == "Carlsberg Ridge, 100km NW of nowhere"
-
-
-# --------------------------------------------------------------------------
-# unique_mode
-# --------------------------------------------------------------------------
-
-def test_unique_mode_returns_most_frequent() -> None:
-    """The repeated value wins."""
-    assert unique_mode([2.5, 2.5, 4.5]) == 2.5
-
-
-def test_unique_mode_all_distinct_returns_first() -> None:
-    """With all-distinct values the first element is returned (order-sensitive)."""
-    assert unique_mode([4.5, 2.5, 3.1]) == 4.5
 
 
 # --------------------------------------------------------------------------
@@ -234,11 +219,14 @@ def test_parse_quakes_time_is_local_aware(sample_bytes: bytes) -> None:
 # --------------------------------------------------------------------------
 
 def test_magnitude_summary_populated(sample_bytes: bytes) -> None:
-    """A populated list produces a statistics line including the maximum."""
+    """A populated list reports max, mean and median - and no longer mode."""
     quakes, _ = parse_quakes(sample_bytes, DEFAULT_ORIGIN)
     line = magnitude_summary(quakes)
     assert line.startswith("Magnitude Max =")
     assert "4.50" in line
+    assert "Mean =" in line
+    assert "Median =" in line
+    assert "Mode" not in line
 
 
 def test_magnitude_summary_empty() -> None:

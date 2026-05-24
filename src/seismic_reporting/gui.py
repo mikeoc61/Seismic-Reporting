@@ -34,6 +34,7 @@ _PERIODS: dict[str, tuple[str, float]] = {
     'day': ('Past Day', 1.0),
     'week': ('Past Week', 7.0),
     'month': ('Past Month', 30.0),
+    'year': ('Past Year', 365.0),
 }
 
 
@@ -71,6 +72,7 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "Past Day", self.period, "day")
         self.add_radiobutton(frame1, "Past Week", self.period, "week")
         self.add_radiobutton(frame1, "Past Month", self.period, "month")
+        self.add_radiobutton(frame1, "Past Year", self.period, "year")
         self.period.set("day")
 
         # Minimum-magnitude selector (values are FDSN minmagnitude floats)

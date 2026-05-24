@@ -1,72 +1,68 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Tkinter GUI front end for the Seismic-Reporting tool.
 
-'''
-+---------------------------------------------------------------------
-+ Query, sort, format and output USGS earthquate data
-+
-+ GeoJSON is a format for encoding a variety of geographic data structures. 
-+ A GeoJSON object may represent a geometry, a feature, or a collection of features. 
-+ GeoJSON uses the JSON standard.
-+
-+ See the GeoJSON site for more information: http://www.geojson.org/
-+
-+ Uses Tkinter (tcl/tk) to provide GUI
-+
-+ See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
-+---------------------------------------------------------------------
-'''
+Fetches USGS GeoJSON earthquake feeds and displays events sorted by
+magnitude, location, distance or time.
 
-__author__ = 'Michael E. OConnor'
+See: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+"""
+
+__author__    = 'Michael E. OConnor'
 __copyright__ = 'Copyright 2023'
 
-import sys
-from tkinter import *
+import tkinter as tk
+from timeit import default_timer as timer
 from tkinter import ttk
-from output import printResults
-from urllib.request import urlopen
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 
-# URL Base for earthquake data feed. Will be appended to in USGS_Gui class
+from IP_geo import get_IP_geo
+from output import (fetch_geojson, format_report, magnitude_summary,
+                    parse_quakes, sort_quakes)
 
-quake_URL_base = "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
+# Base URL for the USGS feed; magnitude and period are appended in submit().
+QUAKE_URL_BASE = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/"
 
-# Initialization function for the GUI using Tcl/Tk
+
 class USGS_Gui:
 
-    MASTER_WIDTH = 106      # Width of GUI display window in character count
-    MASTER_HEIGHT = 40      # Heigth of GUI display frame in character count
-    SIDE_WIDTH = 100        # Width of left panel
-    WIDTH = 500             # Width of Result frame in pixels
-    HEIGHT = 300            # Heigth of result frame in pixels
+    MASTER_WIDTH  = 106     # Width of result text box, in characters
+    MASTER_HEIGHT = 40      # Height of result text box, in characters
+    SIDE_WIDTH    = 100     # Width of the left control panel, in pixels
+    WIDTH         = 500     # Width of the result frame, in pixels
+    HEIGHT        = 300     # Height of the result frame, in pixels
 
     def __init__(self, master):
 
         master.title('USGS Earthquake Data')
-        frame0 = ttk.Panedwindow(master, orient=HORIZONTAL)
-        frame0.pack(fill=BOTH, expand=True)
-        # Creating two frames within the window
-        frame1 = ttk.Frame(frame0, width=self.SIDE_WIDTH, height=self.HEIGHT, relief=RAISED, padding=10)
-        frame2 = ttk.Frame(frame0, width=self.WIDTH, height=self.HEIGHT, relief=SUNKEN)
+        frame0 = ttk.Panedwindow(master, orient=tk.HORIZONTAL)
+        frame0.pack(fill=tk.BOTH, expand=True)
+
+        # Two frames within the window: controls on the left, results right
+        frame1 = ttk.Frame(frame0, width=self.SIDE_WIDTH, height=self.HEIGHT,
+                            relief=tk.RAISED, padding=10)
+        frame2 = ttk.Frame(frame0, width=self.WIDTH, height=self.HEIGHT,
+                            relief=tk.SUNKEN)
         frame0.add(frame1, weight=1)
         frame0.add(frame2, weight=4)
-        
+
         self.style = ttk.Style()
-        self.style.theme_use('aqua')
+        if 'aqua' in self.style.theme_names():    # 'aqua' is macOS-only
+            self.style.theme_use('aqua')
         self.style.configure('TButton', font='Arial 15', relief="flat")
 
-        # Add labels and radio buttons for selecting the sample period
+        # Time period selector
         self.add_label(frame1, "Time Period")
-        self.period = StringVar()
+        self.period = tk.StringVar()
         self.add_radiobutton(frame1, "Past Hour", self.period, "hour")
         self.add_radiobutton(frame1, "Past Day", self.period, "day")
         self.add_radiobutton(frame1, "Past Week", self.period, "week")
         self.add_radiobutton(frame1, "Past Month", self.period, "month")
         self.period.set("day")
 
-        # Add labels and radio buttons for selecting the Magnitude range
+        # Magnitude range selector
         self.add_label(frame1, "Magnitude")
-        self.mag = StringVar()
+        self.mag = tk.StringVar()
         self.add_radiobutton(frame1, "Significant", self.mag, 'significant')
         self.add_radiobutton(frame1, "M4.5+", self.mag, '4.5')
         self.add_radiobutton(frame1, "M2.5+", self.mag, '2.5')
@@ -74,82 +70,90 @@ class USGS_Gui:
         self.add_radiobutton(frame1, "All Quakes", self.mag, 'all')
         self.mag.set("1.0")
 
-        # Add labels and radio buttons for selecting the sorting method
+        # Sort field selector
         self.add_label(frame1, "Sort By")
-        self.sortby = IntVar()
+        self.sortby = tk.IntVar()
         self.add_radiobutton(frame1, "Magnitude", self.sortby, 0)
         self.add_radiobutton(frame1, "Location", self.sortby, 1)
         self.add_radiobutton(frame1, "Distance", self.sortby, 2)
         self.add_radiobutton(frame1, "Time", self.sortby, 3)
         self.sortby.set(0)
 
-        # Add labels and radio buttons for selecting the sort order
+        # Sort order selector
         self.add_label(frame1, "Sort Order")
-        self.reverse = BooleanVar()
+        self.reverse = tk.BooleanVar()
         self.add_radiobutton(frame1, "Ascending", self.reverse, False)
         self.add_radiobutton(frame1, "Descending", self.reverse, True)
         self.reverse.set(False)
 
-        # Add dividing line between radio buttons and submit button
         self.add_line(frame1, 'white')
 
-        # Add a button to submit the selected options
-        result_button = Button(frame1, text="Get Results", command=self.submit, bg='white', fg='blue', relief='sunken')
+        result_button = tk.Button(frame1, text="Get Results",
+                                  command=self.submit, bg='white', fg='blue',
+                                  relief='sunken')
         result_button.pack(anchor='s', pady=3)
 
-        # Add a text box to display the results
-        self.result_box = Text(frame2, width=self.MASTER_WIDTH, height=self.MASTER_HEIGHT)
-        scrollbar = Scrollbar(frame2, orient=VERTICAL, command=self.result_box.yview)
-        scrollbar.pack(side=RIGHT, fill=Y)
+        # Result text box with vertical scrollbar
+        self.result_box = tk.Text(frame2, width=self.MASTER_WIDTH,
+                                  height=self.MASTER_HEIGHT)
+        scrollbar = tk.Scrollbar(frame2, orient=tk.VERTICAL,
+                                 command=self.result_box.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.result_box["yscrollcommand"] = scrollbar.set
-        self.result_box.pack(side=LEFT, fill=BOTH, expand=YES)
+        self.result_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=tk.YES)
 
-    # Function to add a tk style label to a frame and set default colors, relief style and vertical padding
+    # -- small widget-construction helpers ---------------------------------
+
     def add_label(self, frame, text):
-        Label(frame, text=text, bg="blue", fg="white", relief='ridge', justify=LEFT).pack(fill=X, pady=5)
+        tk.Label(frame, text=text, bg="blue", fg="white", relief='ridge',
+                 justify=tk.LEFT).pack(fill=tk.X, pady=5)
 
-    # Function to add a ttk style radio button to a frame and set default vertical padding
     def add_radiobutton(self, frame, text, variable, value):
-        ttk.Radiobutton(frame, text=text, variable=variable, value=value).pack(anchor='w', pady=1)
+        ttk.Radiobutton(frame, text=text, variable=variable,
+                        value=value).pack(anchor='w', pady=1)
 
-    # Create a vertical canvas and draw a dividing line
-    # Parameters are: canvas.create_line(x1, y1, x2, y2, options)
     def add_line(self, frame, color):
-        canvas = Canvas(frame, width=self.SIDE_WIDTH, height=8)
+        canvas = tk.Canvas(frame, width=self.SIDE_WIDTH, height=8)
         canvas.pack()
         canvas.create_line(0, 8, self.SIDE_WIDTH, 8, fill=color)
 
-    # Function to submit the selected options
+    # -- result handling ---------------------------------------------------
+
     def submit(self):
+        """Fetch, process and display results for the current selections."""
         self.clear()
-        quakeData = quake_URL_base + self.mag.get() + "_" + self.period.get() + ".geojson"
+        url = (QUAKE_URL_BASE + self.mag.get() + "_"
+               + self.period.get() + ".geojson")
+
         try:
-            webUrl = urlopen(quakeData, timeout=10)
-        except (URLError, HTTPError) as e:
-            print("Fatal error opening {}: {}".format(quakeData, e))
-            raise SystemExit(1)
-        else:
-            if (webUrl.getcode() == 200):
-                data = webUrl.read()
-                sys.stdout.write = self.redirector
-                printResults(data, self.sortby, self.reverse, self.MASTER_WIDTH)
-                sys.stdout.write = sys.__stdout__
-            else:
-                print("Can't retrieve quake data " + str(webUrl.getcode()))
+            data = fetch_geojson(url)
+        except (URLError, HTTPError, RuntimeError) as err:
+            self._show("Error retrieving data from:\n{}\n\n{}".format(url, err))
+            return
 
-    # Function to clear the results
+        start = timer()
+        origin = get_IP_geo()
+        quakes, meta = parse_quakes(data, origin)
+        stats = magnitude_summary(quakes)        # before sort: feed order
+        quakes = sort_quakes(quakes, self.sortby.get(), self.reverse.get())
+        report = format_report(quakes, meta, origin, self.sortby.get(),
+                               stats, timer() - start, self.MASTER_WIDTH)
+        self._show(report)
+
     def clear(self):
-        self.result_box.delete(1.0, 'end')
+        """Empty the result text box."""
+        self.result_box.delete('1.0', tk.END)
 
-    # Function to redirect the output to the GUI text box
-    def redirector(self, inputStr):
-        self.result_box.insert(INSERT, inputStr)
+    def _show(self, text):
+        """Append text to the result text box."""
+        self.result_box.insert(tk.END, text)
+
 
 def main():
-
-    root = Tk()
+    root = tk.Tk()
     USGS_Gui(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

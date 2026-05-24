@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Core logic for the Seismic-Reporting tool.
 
 Builds USGS FDSN event-service queries, decodes the GeoJSON response into
@@ -10,47 +8,53 @@ backs both the Tkinter GUI and the command-line front end.
 FDSN event service: https://earthquake.usgs.gov/fdsnws/event/1/
 """
 
+from __future__ import annotations
+
 import datetime
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from operator import attrgetter
 from statistics import mean, median
-from urllib.error import HTTPError, URLError
+from typing import Any, cast
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
-from haversine import calc_dist
+from seismic_reporting.haversine import calc_dist
 
-__author__    = "Michael E. O'Connor"
-__copyright__ = "Copyright 2025"
+__author__ = "Michael E. O'Connor"
+__copyright__ = "Copyright 2026"
 
 # USGS FDSN event query endpoint (GeoJSON output).
-FDSN_ENDPOINT = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+FDSN_ENDPOINT: str = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 # Sort codes. Values intentionally match the Tkinter IntVar used by the GUI.
-SORT_MAGNITUDE = 0
-SORT_LOCATION  = 1
-SORT_DISTANCE  = 2
-SORT_TIME      = 3
+SORT_MAGNITUDE: int = 0
+SORT_LOCATION: int = 1
+SORT_DISTANCE: int = 2
+SORT_TIME: int = 3
 
-_SORT_LABEL = {
+_SORT_LABEL: dict[int, str] = {
     SORT_MAGNITUDE: "MAGNITUDE",
-    SORT_LOCATION:  "LOCATION",
-    SORT_DISTANCE:  "DISTANCE",
-    SORT_TIME:      "DATE & TIME",
+    SORT_LOCATION: "LOCATION",
+    SORT_DISTANCE: "DISTANCE",
+    SORT_TIME: "DATE & TIME",
 }
 
 # Returned by fetch_geojson() when FDSN reports HTTP 204 (zero matches).
-_EMPTY_GEOJSON = (b'{"type":"FeatureCollection",'
-                  b'"metadata":{"count":0,"title":"USGS FDSN query (no events)"},'
-                  b'"features":[]}')
+_EMPTY_GEOJSON: bytes = (
+    b'{"type":"FeatureCollection",'
+    b'"metadata":{"count":0,"title":"USGS FDSN query (no events)"},'
+    b'"features":[]}'
+)
 
 
 @dataclass
 class Quake:
     """A single seismic event, with distance pre-computed from the observer."""
+
     mag: float
-    place: str                      # raw USGS place string
+    place: str  # raw USGS place string
     distance_km: float
     time: datetime.datetime
 
@@ -58,6 +62,7 @@ class Quake:
 @dataclass
 class Origin:
     """Observer location: the reference point for distance calculations."""
+
     lat: float
     lon: float
     name: str
@@ -65,14 +70,14 @@ class Origin:
 
 # Default observer: a fixed home location replaces the old IP-geolocation
 # lookup (a self-hosted tool does not move).
-DEFAULT_ORIGIN = Origin(19.6402, -155.9991, "Kailua-Kona, Hawaii")
+DEFAULT_ORIGIN: Origin = Origin(19.6402, -155.9991, "Kailua-Kona, Hawaii")
 
 
 # --------------------------------------------------------------------------
 # Helpers (behaviour carried verbatim from the original implementation)
 # --------------------------------------------------------------------------
 
-def unique_mode(values):
+def unique_mode(values: list[float]) -> float:
     """Return the most frequent value; ties resolved toward the larger count.
 
     NOTE: when every value is distinct (the common case for float
@@ -84,14 +89,14 @@ def unique_mode(values):
     return counted[0][1]
 
 
-def check_type(val):
+def check_type(val: Any) -> float:
     """Coerce an int/float to float; anything else (e.g. JSON null) -> 0.00."""
     if isinstance(val, (float, int)):
         return float(val)
     return 0.00
 
 
-def format_place(place):
+def format_place(place: str) -> str:
     """Re-order a USGS place string so the broad region leads."""
     _regions = ["Region", "Ocean", "Ridge", "Sea", "Passage", "Rise", "Gulf"]
 
@@ -106,7 +111,7 @@ def format_place(place):
     return ', '.join(_new_list)
 
 
-def _place_key(quake):
+def _place_key(quake: Quake) -> str:
     """Sort key for location ordering (region-first form)."""
     return format_place(quake.place)
 
@@ -115,9 +120,16 @@ def _place_key(quake):
 # Pipeline: build URL -> fetch -> parse -> (summary) -> sort -> format
 # --------------------------------------------------------------------------
 
-def build_fdsn_url(min_mag, starttime, endtime=None,
-                   lat=None, lon=None, radius_km=None,
-                   orderby='time', limit=None):
+def build_fdsn_url(
+    min_mag: float,
+    starttime: str,
+    endtime: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_km: float | None = None,
+    orderby: str = 'time',
+    limit: int | None = None,
+) -> str:
     """Construct a USGS FDSN event-query URL (GeoJSON format).
 
     `starttime`/`endtime` are ISO-8601 strings (UTC assumed). When `lat`,
@@ -125,7 +137,7 @@ def build_fdsn_url(min_mag, starttime, endtime=None,
     radial region; otherwise it is global. Server-side filtering replaces
     the old client-side distance filtering.
     """
-    params = {
+    params: dict[str, object] = {
         'format': 'geojson',
         'starttime': starttime,
         'minmagnitude': min_mag,
@@ -142,7 +154,7 @@ def build_fdsn_url(min_mag, starttime, endtime=None,
     return FDSN_ENDPOINT + '?' + urlencode(params)
 
 
-def fetch_geojson(url, timeout=10):
+def fetch_geojson(url: str, timeout: float = 10) -> bytes:
     """Fetch raw GeoJSON bytes from a USGS URL.
 
     Returns an empty FeatureCollection on HTTP 204 (FDSN: query valid but
@@ -155,10 +167,12 @@ def fetch_geojson(url, timeout=10):
         return _EMPTY_GEOJSON
     if code != 200:
         raise RuntimeError('USGS server returned HTTP {}'.format(code))
-    return response.read()
+    return cast(bytes, response.read())
 
 
-def parse_quakes(data, origin):
+def parse_quakes(
+    data: bytes, origin: Origin
+) -> tuple[list[Quake], dict[str, Any]]:
     """Decode GeoJSON bytes into (list[Quake], metadata dict).
 
     Quakes are returned in feed order. `origin` is an Origin instance;
@@ -166,7 +180,7 @@ def parse_quakes(data, origin):
     """
     geo = json.loads(data.decode('utf-8'))
 
-    quakes = []
+    quakes: list[Quake] = []
     for feature in geo['features']:
         lon, lat = feature['geometry']['coordinates'][0:2]
         props = feature['properties']
@@ -178,14 +192,14 @@ def parse_quakes(data, origin):
         ))
 
     metadata = geo.get('metadata', {})
-    meta = {
+    meta: dict[str, Any] = {
         'count': metadata.get('count', len(quakes)),
         'title': metadata.get('title', 'USGS FDSN Earthquakes'),
     }
     return quakes, meta
 
 
-def magnitude_summary(quakes):
+def magnitude_summary(quakes: list[Quake]) -> str:
     """One-line magnitude statistics, or a 'no results' notice.
 
     Must be called on the feed-order list (before sorting): unique_mode
@@ -200,8 +214,11 @@ def magnitude_summary(quakes):
         max(mags), mean(mags), median(mags), unique_mode(mags))
 
 
-def sort_quakes(quakes, sort_code, reverse=False):
+def sort_quakes(
+    quakes: list[Quake], sort_code: int, reverse: bool = False
+) -> list[Quake]:
     """Return a new list of quakes ordered by the requested sort code."""
+    key: Callable[[Quake], Any]
     if sort_code == SORT_LOCATION:
         key = _place_key
     elif sort_code == SORT_DISTANCE:
@@ -213,14 +230,22 @@ def sort_quakes(quakes, sort_code, reverse=False):
     return sorted(quakes, key=key, reverse=reverse)
 
 
-def format_report(quakes, meta, origin, sort_code, stats_line, elapsed_s, width):
+def format_report(
+    quakes: list[Quake],
+    meta: dict[str, Any],
+    origin: Origin,
+    sort_code: int,
+    stats_line: str,
+    elapsed_s: float,
+    width: int,
+) -> str:
     """Render a complete fixed-width text report as a single string.
 
     `quakes` should already be sorted; `stats_line` is the precomputed
     magnitude_summary() result. Returns the string the GUI inserts into
     its text box (or the CLI prints to stdout).
     """
-    out = []
+    out: list[str] = []
 
     out.append('{:*^{}}\n\n'.format(' [Event statistical Analysis] ', width))
     out.append('{:^{}}\n\n'.format(

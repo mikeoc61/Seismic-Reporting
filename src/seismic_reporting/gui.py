@@ -1,17 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Tkinter GUI front end for the Seismic-Reporting tool.
 
 Queries the USGS FDSN event service and displays earthquakes sorted by
 magnitude, location, distance or time. Distances are measured from a
-fixed home location (DEFAULT_ORIGIN); the command-line front end (cli.py)
-exposes arbitrary coordinates and radial filtering.
+fixed home location (DEFAULT_ORIGIN); the command-line front end
+(seismic_reporting.cli) exposes arbitrary coordinates and radial filtering.
 
 FDSN event service: https://earthquake.usgs.gov/fdsnws/event/1/
 """
 
-__author__    = 'Michael E. OConnor'
-__copyright__ = 'Copyright 2025'
+from __future__ import annotations
 
 import datetime
 import tkinter as tk
@@ -19,28 +16,37 @@ from timeit import default_timer as timer
 from tkinter import ttk
 from urllib.error import HTTPError, URLError
 
-from output import (DEFAULT_ORIGIN, build_fdsn_url, fetch_geojson,
-                    format_report, magnitude_summary, parse_quakes,
-                    sort_quakes)
+from seismic_reporting.core import (
+    DEFAULT_ORIGIN,
+    build_fdsn_url,
+    fetch_geojson,
+    format_report,
+    magnitude_summary,
+    parse_quakes,
+    sort_quakes,
+)
+
+__author__ = "Michael E. O'Connor"
+__copyright__ = "Copyright 2026"
 
 # Map the GUI period radio buttons to a look-back window in days.
-_PERIOD_DAYS = {
-    'hour':  1.0 / 24.0,
-    'day':   1.0,
-    'week':  7.0,
+_PERIOD_DAYS: dict[str, float] = {
+    'hour': 1.0 / 24.0,
+    'day': 1.0,
+    'week': 7.0,
     'month': 30.0,
 }
 
 
 class USGS_Gui:
 
-    MASTER_WIDTH  = 106     # Width of result text box, in characters
-    MASTER_HEIGHT = 40      # Height of result text box, in characters
-    SIDE_WIDTH    = 100     # Width of the left control panel, in pixels
-    WIDTH         = 500     # Width of the result frame, in pixels
-    HEIGHT        = 300     # Height of the result frame, in pixels
+    MASTER_WIDTH = 106     # Width of result text box, in characters
+    MASTER_HEIGHT = 40     # Height of result text box, in characters
+    SIDE_WIDTH = 100       # Width of the left control panel, in pixels
+    WIDTH = 500            # Width of the result frame, in pixels
+    HEIGHT = 300           # Height of the result frame, in pixels
 
-    def __init__(self, master):
+    def __init__(self, master: tk.Tk) -> None:
 
         master.title('USGS Earthquake Data')
         frame0 = ttk.Panedwindow(master, orient=tk.HORIZONTAL)
@@ -112,22 +118,28 @@ class USGS_Gui:
 
     # -- small widget-construction helpers ---------------------------------
 
-    def add_label(self, frame, text):
+    def add_label(self, frame: ttk.Frame, text: str) -> None:
         tk.Label(frame, text=text, bg="blue", fg="white", relief='ridge',
                  justify=tk.LEFT).pack(fill=tk.X, pady=5)
 
-    def add_radiobutton(self, frame, text, variable, value):
+    def add_radiobutton(
+        self,
+        frame: ttk.Frame,
+        text: str,
+        variable: tk.Variable,
+        value: object,
+    ) -> None:
         ttk.Radiobutton(frame, text=text, variable=variable,
                         value=value).pack(anchor='w', pady=1)
 
-    def add_line(self, frame, color):
+    def add_line(self, frame: ttk.Frame, color: str) -> None:
         canvas = tk.Canvas(frame, width=self.SIDE_WIDTH, height=8)
         canvas.pack()
         canvas.create_line(0, 8, self.SIDE_WIDTH, 8, fill=color)
 
     # -- result handling ---------------------------------------------------
 
-    def submit(self):
+    def submit(self) -> None:
         """Fetch, process and display results for the current selections."""
         self.clear()
 
@@ -151,16 +163,17 @@ class USGS_Gui:
                                stats, timer() - start, self.MASTER_WIDTH)
         self._show(report)
 
-    def clear(self):
+    def clear(self) -> None:
         """Empty the result text box."""
         self.result_box.delete('1.0', tk.END)
 
-    def _show(self, text):
+    def _show(self, text: str) -> None:
         """Append text to the result text box."""
         self.result_box.insert(tk.END, text)
 
 
-def main():
+def main() -> None:
+    """Launch the Tkinter GUI event loop."""
     root = tk.Tk()
     USGS_Gui(root)
     root.mainloop()

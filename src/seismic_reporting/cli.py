@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Command-line front end for the Seismic-Reporting tool.
 
 Queries the USGS FDSN event service and prints earthquake events sorted
@@ -7,11 +5,13 @@ by magnitude, location, distance or time. Query parameters that the GUI
 hard-codes are exposed here as command-line options.
 
 Examples:
-    cli.py                                  # M2.5+, past day, near home
-    cli.py --radius 300 --min-mag 1.0       # within 300 km of home
-    cli.py --lat 37.77 --lon -122.42 --radius 100 --sort time --reverse
-    cli.py --file saved.geojson --sort magnitude
+    seismic                                  # M2.5+, past day, near home
+    seismic --radius 300 --min-mag 1.0       # within 300 km of home
+    seismic --lat 37.77 --lon -122.42 --radius 100 --sort time --reverse
+    seismic --file saved.geojson --sort magnitude
 """
+
+from __future__ import annotations
 
 import argparse
 import datetime
@@ -19,25 +19,36 @@ import sys
 from timeit import default_timer as timer
 from urllib.error import HTTPError, URLError
 
-from output import (DEFAULT_ORIGIN, SORT_DISTANCE, SORT_LOCATION,
-                     SORT_MAGNITUDE, SORT_TIME, Origin, build_fdsn_url,
-                     fetch_geojson, format_report, magnitude_summary,
-                     parse_quakes, sort_quakes)
+from seismic_reporting.core import (
+    DEFAULT_ORIGIN,
+    SORT_DISTANCE,
+    SORT_LOCATION,
+    SORT_MAGNITUDE,
+    SORT_TIME,
+    Origin,
+    build_fdsn_url,
+    fetch_geojson,
+    format_report,
+    magnitude_summary,
+    parse_quakes,
+    sort_quakes,
+)
 
-__author__    = "Michael E. O'Connor"
-__copyright__ = "Copyright 2025"
+__author__ = "Michael E. O'Connor"
+__copyright__ = "Copyright 2026"
 
-_SORT_CODES = {
+_SORT_CODES: dict[str, int] = {
     'magnitude': SORT_MAGNITUDE,
-    'location':  SORT_LOCATION,
-    'distance':  SORT_DISTANCE,
-    'time':      SORT_TIME,
+    'location': SORT_LOCATION,
+    'distance': SORT_DISTANCE,
+    'time': SORT_TIME,
 }
 
 
-def parse_args(argv=None):
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Define and parse command-line options."""
     parser = argparse.ArgumentParser(
+        prog='seismic',
         description="Query USGS earthquake data and list events sorted by "
                     "magnitude, location, distance or time.")
 
@@ -68,7 +79,7 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Run a query (or load a file) and print the formatted report."""
     args = parse_args(argv)
     origin = Origin(args.lat, args.lon, args.name)

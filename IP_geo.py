@@ -1,13 +1,7 @@
-from __future__ import print_function
 import json
-import sys
 
-#import pprint
-
-if sys.version_info <= (3, 0):
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
 
 __author__    = "Michael E. O'Connor"
 __copyright__ = "Copyright 2018"
@@ -35,9 +29,9 @@ def get_IP_geo():
       # Open the URL and read the data, if successful decode bytestring and
       # split lat and long into separate strings
       try:
-          webUrl = urlopen (geo_URL)
-      except:
-          print("Error opening: {}, using default location".format(geo_URL))
+          webUrl = urlopen(geo_URL, timeout=10)
+      except (URLError, HTTPError) as e:
+          print("Error opening {}: {} - using default location".format(geo_URL, e))
       else:
           if (webUrl.getcode() == 200):
               geo_data = webUrl.read()

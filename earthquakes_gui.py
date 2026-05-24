@@ -25,11 +25,7 @@ from tkinter import *
 from tkinter import ttk
 from output import printResults
 from urllib.request import urlopen
-
-if sys.version_info <= (3, 0):
-    print("Sorry, {} requires Python 3.x, detected version: {}".format \
-          (sys.argv[0], str(sys.version_info[0]) + '.' + str(sys.version_info[1])))
-    raise SystemExit()
+from urllib.error import URLError, HTTPError
 
 # URL Base for earthquake data feed. Will be appended to in USGS_Gui class
 
@@ -128,10 +124,10 @@ class USGS_Gui:
         self.clear()
         quakeData = quake_URL_base + self.mag.get() + "_" + self.period.get() + ".geojson"
         try:
-            webUrl = urlopen (quakeData)
-        except:
-            print("Fatal error opening: {}".format(quakeData))
-            raise SystemExit()
+            webUrl = urlopen(quakeData, timeout=10)
+        except (URLError, HTTPError) as e:
+            print("Fatal error opening {}: {}".format(quakeData, e))
+            raise SystemExit(1)
         else:
             if (webUrl.getcode() == 200):
                 data = webUrl.read()

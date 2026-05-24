@@ -54,6 +54,18 @@ def test_sort_codes_cover_all_choices() -> None:
     assert set(cli._SORT_CODES) == {"magnitude", "location", "distance", "time"}
 
 
+@pytest.mark.parametrize("days,expected", [
+    (1, "Past 1 day"),
+    (1.0, "Past 1 day"),
+    (7, "Past 7 days"),
+    (30, "Past 30 days"),
+    (1.5, "Past 1.5 days"),
+])
+def test_period_label(days: float, expected: str) -> None:
+    """Day counts render as a singular/plural 'Past N day(s)' label."""
+    assert cli._period_label(days) == expected
+
+
 # --------------------------------------------------------------------------
 # main  (file-driven: no network)
 # --------------------------------------------------------------------------

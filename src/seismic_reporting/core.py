@@ -227,6 +227,7 @@ def sort_quakes(
 def format_report(
     quakes: list[Quake],
     meta: dict[str, Any],
+    period_label: str,
     origin: Origin,
     sort_code: int,
     stats_line: str,
@@ -236,15 +237,18 @@ def format_report(
     """Render a complete fixed-width text report as a single string.
 
     `quakes` should already be sorted; `stats_line` is the precomputed
-    magnitude_summary() result. Returns the string the GUI inserts into
-    its text box (or the CLI prints to stdout).
+    magnitude_summary() result. `period_label` is the human-readable
+    look-back window (e.g. 'Past Week') appended to the header; pass an
+    empty string to omit it. Returns the string the GUI inserts into its
+    text box (or the CLI prints to stdout).
     """
     out: list[str] = []
 
     out.append('{:*^{}}\n\n'.format(' [Event statistical Analysis] ', width))
-    out.append('{:^{}}\n\n'.format(
-        'Recorded {} events from {}'.format(meta['count'], meta['title']),
-        width))
+    header = 'Recorded {} events from {}'.format(meta['count'], meta['title'])
+    if period_label:
+        header = '{}, {}'.format(header, period_label)
+    out.append('{:^{}}\n\n'.format(header, width))
     out.append('{:^{}}\n\n'.format(stats_line, width))
     out.append('{:^{}}\n'.format(
         'Total processing time: {:2.2f} seconds'.format(elapsed_s), width))

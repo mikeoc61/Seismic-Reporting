@@ -29,12 +29,12 @@ from seismic_reporting.core import (
 __author__ = "Michael E. O'Connor"
 __copyright__ = "Copyright 2026"
 
-# Map the GUI period radio buttons to a look-back window in days.
-_PERIOD_DAYS: dict[str, float] = {
-    'hour': 1.0 / 24.0,
-    'day': 1.0,
-    'week': 7.0,
-    'month': 30.0,
+# Map each GUI period radio button to its display label and look-back days.
+_PERIODS: dict[str, tuple[str, float]] = {
+    'hour': ('Past Hour', 1.0 / 24.0),
+    'day': ('Past Day', 1.0),
+    'week': ('Past Week', 7.0),
+    'month': ('Past Month', 30.0),
 }
 
 
@@ -143,7 +143,7 @@ class USGS_Gui:
         """Fetch, process and display results for the current selections."""
         self.clear()
 
-        days = _PERIOD_DAYS[self.period.get()]
+        period_label, days = _PERIODS[self.period.get()]
         starttime = (datetime.datetime.now(datetime.timezone.utc)
                      - datetime.timedelta(days=days)
                      ).strftime('%Y-%m-%dT%H:%M:%S')
@@ -159,8 +159,9 @@ class USGS_Gui:
         quakes, meta = parse_quakes(data, DEFAULT_ORIGIN)
         stats = magnitude_summary(quakes)
         quakes = sort_quakes(quakes, self.sortby.get(), self.reverse.get())
-        report = format_report(quakes, meta, DEFAULT_ORIGIN, self.sortby.get(),
-                               stats, timer() - start, self.MASTER_WIDTH)
+        report = format_report(quakes, meta, period_label, DEFAULT_ORIGIN,
+                               self.sortby.get(), stats, timer() - start,
+                               self.MASTER_WIDTH)
         self._show(report)
 
     def clear(self) -> None:

@@ -45,6 +45,12 @@ _SORT_CODES: dict[str, int] = {
 }
 
 
+def _period_label(days: float) -> str:
+    """Human-readable label for a look-back window given in days."""
+    unit = 'day' if days == 1 else 'days'
+    return 'Past {:g} {}'.format(days, unit)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Define and parse command-line options."""
     parser = argparse.ArgumentParser(
@@ -93,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             print('Error reading {}: {}'.format(args.file, err),
                   file=sys.stderr)
             return 1
+        period_label = ''
     else:
         starttime = (datetime.datetime.now(datetime.timezone.utc)
                      - datetime.timedelta(days=args.days)
@@ -105,13 +112,14 @@ def main(argv: list[str] | None = None) -> int:
         except (URLError, HTTPError, RuntimeError) as err:
             print('Error retrieving data: {}'.format(err), file=sys.stderr)
             return 1
+        period_label = _period_label(args.days)
 
     start = timer()
     quakes, meta = parse_quakes(data, origin)
     stats = magnitude_summary(quakes)
     quakes = sort_quakes(quakes, sort_code, args.reverse)
-    report = format_report(quakes, meta, origin, sort_code, stats,
-                           timer() - start, args.width)
+    report = format_report(quakes, meta, period_label, origin, sort_code,
+                           stats, timer() - start, args.width)
     print(report)
     return 0
 

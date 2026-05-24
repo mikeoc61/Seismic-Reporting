@@ -305,12 +305,21 @@ def test_sort_does_not_mutate_input(quake_list: list[Quake]) -> None:
 def test_format_report_contains_sections(quake_list: list[Quake]) -> None:
     """The rendered report includes the header, stats and a sort banner."""
     meta = {"count": 3, "title": "fixture"}
-    report = format_report(quake_list, meta, DEFAULT_ORIGIN,
+    report = format_report(quake_list, meta, "Past Week", DEFAULT_ORIGIN,
                             SORT_MAGNITUDE, "stats here", 0.01, width=100)
     assert "Event statistical Analysis" in report
-    assert "Recorded 3 events from fixture" in report
+    assert "Recorded 3 events from fixture, Past Week" in report
     assert "stats here" in report
     assert "sorted by MAGNITUDE" in report
+
+
+def test_format_report_omits_empty_period(quake_list: list[Quake]) -> None:
+    """An empty period label leaves the header with no trailing separator."""
+    meta = {"count": 3, "title": "fixture"}
+    report = format_report(quake_list, meta, "", DEFAULT_ORIGIN,
+                            SORT_MAGNITUDE, "stats", 0.01, width=100)
+    assert "Recorded 3 events from fixture" in report
+    assert "fixture," not in report
 
 
 def test_format_report_distance_banner_names_origin(
@@ -318,7 +327,7 @@ def test_format_report_distance_banner_names_origin(
 ) -> None:
     """The distance sort banner names the origin location."""
     meta = {"count": 3, "title": "fixture"}
-    report = format_report(quake_list, meta, DEFAULT_ORIGIN,
+    report = format_report(quake_list, meta, "Past Day", DEFAULT_ORIGIN,
                             SORT_DISTANCE, "stats", 0.01, width=100)
     assert DEFAULT_ORIGIN.name in report
 

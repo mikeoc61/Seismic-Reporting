@@ -1,0 +1,57 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "count": 4,
+    "title": "USGS FDSN sample fixture"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "10km SE of Pahala, Hawaii",
+        "time": 1714500000000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-155.4, 19.1, 33.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 2.5,
+        "place": "95km N of Hilo, Hawaii",
+        "time": 1714400000000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-155.0, 20.7, 12.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": null,
+        "place": "Southern Mid-Atlantic Ridge",
+        "time": 1714300000000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-16.0, -40.0, 10.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 3.1,
+        "place": "5km W of Volcano, Hawaii",
+        "time": 1714600000000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-155.3, 19.4, 5.0]
+      }
+    }
+  ]
+}

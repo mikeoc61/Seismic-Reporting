@@ -1,19 +1,71 @@
 # Seismic-Reporting
 
-Python3 program which queries USGS earthquake historical data and outputs results
-sorted by distance from a given coordinate. For more info on the data feed, please
-see: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+Queries the USGS earthquake catalog and lists events sorted by magnitude,
+location, distance, or time. Distance is measured (Haversine) from a chosen
+observer coordinate.
 
-IP_geo.py contains code to dynamically fetch current location data based on IP lookup
+## Data source
 
-earthquakes.py is the command line version and imports haversine.py and IP_geo.py
+Events come from the USGS FDSN event service, which supports server-side
+filtering by magnitude, time window, and radial region:
 
-earthquakes_gui.py is the GUI version built with Tkinter and relies on output.py.
-The GUI version is much more powerful as it allows dynamic control of both the
-sample time interval as well as the sort criteria (Magnitude, Place, Distance)
+<https://earthquake.usgs.gov/fdsnws/event/1/>
 
-output.py is imported by earthquakes_gui.py and does the actual output formatting.
-This module also imports haversine.py and imports IP_geo.py to determine local
-coordinates based upon IP address lookup from "http://ipinfo.io/json"
+## Install
 
-The Haversine formula is used to calculate distance relative to starting coordinates
+The package uses a standard `src/` layout and a PEP 517 build. Install it
+(editable, for development) into a virtual environment:
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+This puts two commands on `PATH`: `seismic` (CLI) and `seismic-gui` (GUI).
+Only the standard library is required at runtime; `[dev]` adds pytest, ruff,
+and mypy.
+
+## Project layout
+
+```
+src/seismic_reporting/
+  core.py        FDSN URL construction, GeoJSON parsing into Quake records,
+                 magnitude statistics, sorting, report formatting. No GUI
+                 or argparse dependency; shared by both front ends.
+  cli.py         Command-line front end (entry point: seismic).
+  gui.py         Tkinter GUI front end (entry point: seismic-gui).
+  haversine.py   Great-circle distance between two coordinates.
+tests/           pytest suite, with GeoJSON fixtures under tests/fixtures/.
+```
+
+## Command-line usage
+
+```
+seismic                                  # M2.5+, past day, near home
+seismic --radius 300 --min-mag 1.0       # within 300 km of home
+seismic --lat 37.77 --lon -122.42 --radius 100 --sort time --reverse
+seismic --file saved.geojson --sort magnitude
+```
+
+Run `seismic --help` for the full option list. `--file` reads a saved
+GeoJSON document instead of querying USGS (useful offline or for testing).
+
+## GUI usage
+
+```
+seismic-gui
+```
+
+Select a time period, minimum magnitude, sort field, and sort order, then
+press **Get Results**. The GUI queries globally and sorts by distance from
+the fixed home location (`DEFAULT_ORIGIN` in `core.py`); use
+`seismic --radius` for radial filtering or a different observer coordinate.
+
+## Development
+
+```
+pytest          # run the test suite
+ruff check .    # lint
+mypy src        # type-check (strict)
+```
